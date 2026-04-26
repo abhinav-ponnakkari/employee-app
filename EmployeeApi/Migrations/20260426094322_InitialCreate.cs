@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,6 +12,10 @@ namespace EmployeeApi.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Drop existing table (from previous migration attempts with wrong schema)
+            migrationBuilder.Sql(@"DROP TABLE IF EXISTS ""Employees"";");
+            migrationBuilder.Sql(@"DELETE FROM ""__EFMigrationsHistory"" WHERE ""MigrationId"" != '20260426094322_InitialCreate';");
+
             migrationBuilder.CreateTable(
                 name: "Employees",
                 columns: table => new
