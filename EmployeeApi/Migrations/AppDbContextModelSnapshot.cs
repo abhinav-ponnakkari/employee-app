@@ -42,8 +42,8 @@ namespace EmployeeApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("HireDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("HireDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("LastName")
                         .IsRequired()

@@ -23,7 +23,7 @@ namespace EmployeeApi.Migrations
                     Email = table.Column<string>(type: "text", nullable: false),
                     Department = table.Column<string>(type: "text", nullable: false),
                     Salary = table.Column<decimal>(type: "numeric", nullable: false),
-                    HireDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    HireDate = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
                 {

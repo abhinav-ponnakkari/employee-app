@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EmployeeApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260426071828_InitialCreate")]
+    [Migration("20260426094322_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -45,8 +45,8 @@ namespace EmployeeApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("HireDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateOnly>("HireDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("LastName")
                         .IsRequired()
