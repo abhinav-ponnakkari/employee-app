@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: 'http://localhost:5170/api' });
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5170/api',
+});
 
 export const getEmployees = () => api.get('/employees');
 export const getEmployee = (id) => api.get(`/employees/${id}`);
