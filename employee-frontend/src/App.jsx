@@ -227,8 +227,10 @@ export default function App() {
                       <td><StatusBadge status={emp.status} /></td>
                       <td>{new Date(emp.hireDate).toLocaleDateString()}</td>
                       <td className="actions" onClick={e => e.stopPropagation()}>
-                        <button className="btn-edit" onClick={() => openEdit(emp)}>Edit</button>
-                        <button className="btn-delete" onClick={() => handleDelete(emp.id)}>Delete</button>
+                        <div className="actions-inner">
+                          <button className="btn-edit" onClick={() => openEdit(emp)}>Edit</button>
+                          <button className="btn-delete" onClick={() => handleDelete(emp.id)}>Delete</button>
+                        </div>
                       </td>
                     </tr>
                   ))

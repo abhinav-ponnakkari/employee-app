@@ -20,7 +20,7 @@ export default function Dashboard({ employees, departments }) {
             <path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
         </div>
-        <div>
+        <div className="stat-content">
           <div className="stat-value">{total}</div>
           <div className="stat-label">Total Employees</div>
         </div>
@@ -32,7 +32,7 @@ export default function Dashboard({ employees, departments }) {
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
-        <div>
+        <div className="stat-content">
           <div className="stat-value">{active}</div>
           <div className="stat-label">Active</div>
         </div>
@@ -45,7 +45,7 @@ export default function Dashboard({ employees, departments }) {
             <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
         </div>
-        <div>
+        <div className="stat-content">
           <div className="stat-value">{departments.length}</div>
           <div className="stat-label">Departments</div>
         </div>
@@ -58,7 +58,7 @@ export default function Dashboard({ employees, departments }) {
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
           </svg>
         </div>
-        <div>
+        <div className="stat-content">
           <div className="stat-value">
             ${avgSalary.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
@@ -76,8 +76,8 @@ export default function Dashboard({ employees, departments }) {
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
-          <div>
-            <div className="stat-value" style={{ fontSize: '1.1rem' }}>
+          <div className="stat-content">
+            <div className="stat-value" style={{ fontSize: '1.05rem' }}>
               {newestHire.firstName} {newestHire.lastName}
             </div>
             <div className="stat-label">
