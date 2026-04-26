@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet new *)",
+      "Bash(dotnet add *)",
+      "Bash(dotnet ef *)",
+      "Bash(sqlcmd -L)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet run *)",
+      "Bash(npm run *)",
+      "Bash(curl *)",
+      "Bash(taskkill /F /IM \"EmployeeApi.exe\")",
+      "Bash(taskkill /F /IM \"dotnet.exe\")",
+      "PowerShell(Stop-Process *)",
+      "Bash(winget install *)",
+      "Bash(/c/Program Files/GitHub CLI/gh.exe auth *)",
+      "Bash(git init *)"
+    ]
+  }
+}
