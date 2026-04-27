@@ -8,6 +8,8 @@ using EmployeeApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
 
 var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
@@ -101,6 +103,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+app.UseResponseCompression();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

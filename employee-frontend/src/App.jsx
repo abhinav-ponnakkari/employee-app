@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from './api/employeeApi';
 import { getDepartments } from './api/departmentApi';
 import { getUsers, createUser, resetPassword } from './api/usersApi';
@@ -82,6 +82,7 @@ function EmployeePortalLayout({ user, logout }) {
 
 function MainApp({ user, logout, can }) {
   const [employees, setEmployees] = useState([]);
+  const [totalEmployees, setTotalEmployees] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -95,13 +96,23 @@ function MainApp({ user, logout, can }) {
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
   const [activeView, setActiveView] = useState('employees');
+  const searchDebounce = useRef(null);
 
-  const load = useCallback(async () => {
+  const loadEmployees = useCallback(async (params) => {
     try {
-      const calls = [getEmployees(), getDepartments()];
+      const res = await getEmployees(params);
+      setEmployees(res.data.items);
+      setTotalEmployees(res.data.total);
+    } catch {
+      setError('Failed to load employees. Is the backend running?');
+    }
+  }, []);
+
+  const loadSupport = useCallback(async () => {
+    try {
+      const calls = [getDepartments()];
       if (can('manageUsers')) calls.push(getUsers());
-      const [empRes, deptRes, usersRes] = await Promise.all(calls);
-      setEmployees(empRes.data);
+      const [deptRes, usersRes] = await Promise.all(calls);
       setDepartments(deptRes.data);
       if (usersRes) setUsers(usersRes.data);
     } catch {
@@ -109,14 +120,15 @@ function MainApp({ user, logout, can }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadSupport(); }, [loadSupport]);
 
   useEffect(() => {
-    if (selected) {
-      const fresh = employees.find(e => e.id === selected.id);
-      if (fresh) setSelected(fresh);
-    }
-  }, [employees]); // eslint-disable-line react-hooks/exhaustive-deps
+    loadEmployees({ search, department: filterDept, status: filterStatus, sortBy: sortField, sortDir, page, pageSize: PAGE_SIZE });
+  }, [search, filterDept, filterStatus, sortField, sortDir, page, loadEmployees]);
+
+  const load = useCallback(() => {
+    loadEmployees({ search, department: filterDept, status: filterStatus, sortBy: sortField, sortDir, page, pageSize: PAGE_SIZE });
+  }, [search, filterDept, filterStatus, sortField, sortDir, page, loadEmployees]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async (empData, loginData) => {
     try {
@@ -170,32 +182,16 @@ function MainApp({ user, logout, can }) {
     setPage(1);
   };
 
-  const filtered = useMemo(() => {
-    let r = employees;
-    if (search) {
-      const q = search.toLowerCase();
-      r = r.filter(e =>
-        `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
-        e.email.toLowerCase().includes(q) ||
-        (e.position ?? '').toLowerCase().includes(q)
-      );
-    }
-    if (filterDept) r = r.filter(e => e.department === filterDept);
-    if (filterStatus) r = r.filter(e => (e.status ?? 'Active') === filterStatus);
-    return r;
-  }, [employees, search, filterDept, filterStatus]);
+  const handleSearch = (val) => {
+    clearTimeout(searchDebounce.current);
+    searchDebounce.current = setTimeout(() => {
+      setSearch(val);
+      setPage(1);
+    }, 350);
+  };
 
-  const sorted = useMemo(() => [...filtered].sort((a, b) => {
-    let av = a[sortField] ?? '', bv = b[sortField] ?? '';
-    if (typeof av === 'string') av = av.toLowerCase();
-    if (typeof bv === 'string') bv = bv.toLowerCase();
-    if (av < bv) return sortDir === 'asc' ? -1 : 1;
-    if (av > bv) return sortDir === 'asc' ? 1 : -1;
-    return 0;
-  }), [filtered, sortField, sortDir]);
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(totalEmployees / PAGE_SIZE));
+  const paginated = employees;
 
   const openEdit = (emp) => { setEditing(emp); setShowForm(true); };
 
@@ -281,12 +277,12 @@ function MainApp({ user, logout, can }) {
             <Dashboard employees={employees} departments={departments} />
             <div className="content-panel">
               <SearchFilter
-                search={search} onSearch={v => { setSearch(v); setPage(1); }}
+                search={search} onSearch={v => { handleSearch(v); }}
                 filterDept={filterDept} onFilterDept={v => { setFilterDept(v); setPage(1); }}
                 filterStatus={filterStatus} onFilterStatus={v => { setFilterStatus(v); setPage(1); }}
                 departments={departments}
-                resultCount={filtered.length}
-                totalCount={employees.length}
+                resultCount={totalEmployees}
+                totalCount={totalEmployees}
                 onClear={() => { setSearch(''); setFilterDept(''); setFilterStatus(''); setPage(1); }}
               />
               <div className="table-wrap">
@@ -334,7 +330,7 @@ function MainApp({ user, logout, can }) {
               {totalPages > 1 && (
                 <div className="pagination">
                   <span className="page-info">
-                    {sorted.length === 0 ? '0 results' : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, sorted.length)} of ${sorted.length}`}
+                    {totalEmployees === 0 ? '0 results' : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, totalEmployees)} of ${totalEmployees}`}
                   </span>
                   <div className="page-controls">
                     <button onClick={() => setPage(1)} disabled={page === 1}>«</button>

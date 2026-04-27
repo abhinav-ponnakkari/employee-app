@@ -30,13 +30,13 @@ public class LeaveRequestsController : ControllerBase
         {
             var myId = GetLinkedEmployeeId();
             if (myId is null) return Ok(Array.Empty<LeaveRequest>());
-            return Ok(await _db.LeaveRequests
+            return Ok(await _db.LeaveRequests.AsNoTracking()
                 .Where(r => r.EmployeeId == myId.Value)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToListAsync());
         }
 
-        var query = _db.LeaveRequests.AsQueryable();
+        var query = _db.LeaveRequests.AsNoTracking().AsQueryable();
         if (employeeId.HasValue) query = query.Where(r => r.EmployeeId == employeeId.Value);
         if (!string.IsNullOrEmpty(status)) query = query.Where(r => r.Status == status);
         return Ok(await query.OrderByDescending(r => r.CreatedAt).ToListAsync());
