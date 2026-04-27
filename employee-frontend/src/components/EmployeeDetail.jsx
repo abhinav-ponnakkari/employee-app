@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { avatarColor } from '../utils';
+import { useAuth } from '../context/AuthContext';
 import { getSalaryHistory, addSalaryHistory, deleteSalaryHistory } from '../api/salaryHistoryApi';
 import { getNotes, addNote, deleteNote } from '../api/notesApi';
 
@@ -11,8 +12,6 @@ function Spinner() {
     </svg>
   );
 }
-
-const AVATAR_COLORS_MAP = ['blue', 'green', 'purple', 'orange', 'teal'];
 
 const NOTE_TYPES = ['General', 'HR', 'Performance', 'Warning'];
 const NOTE_BADGE = { General: 'badge-note-general', HR: 'badge-note-hr', Performance: 'badge-note-performance', Warning: 'badge-note-warning' };
@@ -47,6 +46,7 @@ function SalaryChange({ entry }) {
 }
 
 export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClose, onRefresh }) {
+  const { can } = useAuth();
   const [tab, setTab] = useState('profile');
   const [salaryHistory, setSalaryHistory] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -59,14 +59,19 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
   const color = avatarColor(emp.firstName + emp.lastName);
   const status = emp.status ?? 'Active';
 
+  // Viewers can't see the salary tab at all
+  const tabs = can('viewSalary')
+    ? ['profile', 'salary', 'notes']
+    : ['profile', 'notes'];
+
   useEffect(() => {
-    if (tab === 'salary') {
+    if (tab === 'salary' && can('viewSalary')) {
       getSalaryHistory(emp.id).then(r => setSalaryHistory(r.data)).catch(() => {});
     }
     if (tab === 'notes') {
       getNotes(emp.id).then(r => setNotes(r.data)).catch(() => {});
     }
-  }, [tab, emp.id]);
+  }, [tab, emp.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddSalary = async (e) => {
     e.preventDefault();
@@ -121,7 +126,6 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
           </button>
         </div>
 
-        {/* Profile header — always visible */}
         <div className="detail-profile-mini">
           {emp.photoUrl
             ? <img className={`detail-avatar avatar-${color}`} src={emp.photoUrl} alt={initials} />
@@ -134,9 +138,8 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="detail-tabs">
-          {['profile', 'salary', 'notes'].map(t => (
+          {tabs.map(t => (
             <button key={t} className={`detail-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
               {t === 'profile' ? 'Profile' : t === 'salary' ? 'Salary History' : 'Notes'}
             </button>
@@ -156,7 +159,7 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
                 <div className="detail-section-title">Employment</div>
                 <DetailRow label="Department" value={emp.department} />
                 <DetailRow label="Position" value={emp.position} />
-                <DetailRow label="Salary" value={`$${emp.salary.toLocaleString()}`} />
+                {can('viewSalary') && <DetailRow label="Salary" value={`$${emp.salary.toLocaleString()}`} />}
                 <DetailRow label="Hire Date" value={new Date(emp.hireDate).toLocaleDateString()} />
                 <DetailRow label="Status" value={status} />
               </div>
@@ -169,16 +172,18 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
           )}
 
           {/* ── Salary History tab ── */}
-          {tab === 'salary' && (
+          {tab === 'salary' && can('viewSalary') && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>Current: <strong style={{ color: '#86efac' }}>${emp.salary.toLocaleString()}</strong></span>
-                <button className="btn-primary btn-sm" onClick={() => setShowSalaryForm(v => !v)}>
-                  {showSalaryForm ? 'Cancel' : '+ Add Change'}
-                </button>
+                {can('addSalaryHistory') && (
+                  <button className="btn-primary btn-sm" onClick={() => setShowSalaryForm(v => !v)}>
+                    {showSalaryForm ? 'Cancel' : '+ Add Change'}
+                  </button>
+                )}
               </div>
 
-              {showSalaryForm && (
+              {showSalaryForm && can('addSalaryHistory') && (
                 <form className="inline-form" onSubmit={handleAddSalary}>
                   <label>New Salary
                     <input type="number" value={salaryForm.newSalary} onChange={e => setSalaryForm(f => ({ ...f, newSalary: e.target.value }))} min="0" step="0.01" required placeholder="e.g. 80000" />
@@ -202,7 +207,9 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
                 : salaryHistory.map(entry => (
                     <div key={entry.id} style={{ position: 'relative' }}>
                       <SalaryChange entry={entry} />
-                      <button className="note-delete" style={{ position: 'absolute', top: '0.5rem', right: 0 }} onClick={() => handleDeleteSalary(entry.id)} title="Remove">&#x2715;</button>
+                      {can('deleteSalaryHistory') && (
+                        <button className="note-delete" style={{ position: 'absolute', top: '0.5rem', right: 0 }} onClick={() => handleDeleteSalary(entry.id)} title="Remove">&#x2715;</button>
+                      )}
                     </div>
                   ))
               }
@@ -212,26 +219,28 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
           {/* ── Notes tab ── */}
           {tab === 'notes' && (
             <div>
-              <form className="inline-form" onSubmit={handleAddNote} style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <label style={{ flex: 1 }}>Type
-                    <select value={noteForm.noteType} onChange={e => setNoteForm(f => ({ ...f, noteType: e.target.value }))}>
-                      {NOTE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+              {can('addNote') && (
+                <form className="inline-form" onSubmit={handleAddNote} style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <label style={{ flex: 1 }}>Type
+                      <select value={noteForm.noteType} onChange={e => setNoteForm(f => ({ ...f, noteType: e.target.value }))}>
+                        {NOTE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </label>
+                    <label style={{ flex: 2 }}>Author (optional)
+                      <input value={noteForm.createdBy} onChange={e => setNoteForm(f => ({ ...f, createdBy: e.target.value }))} placeholder="Your name" />
+                    </label>
+                  </div>
+                  <label>Note
+                    <textarea value={noteForm.content} onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))} rows={3} placeholder="Add an internal note..." required />
                   </label>
-                  <label style={{ flex: 2 }}>Author (optional)
-                    <input value={noteForm.createdBy} onChange={e => setNoteForm(f => ({ ...f, createdBy: e.target.value }))} placeholder="Your name" />
-                  </label>
-                </div>
-                <label>Note
-                  <textarea value={noteForm.content} onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))} rows={3} placeholder="Add an internal note..." required />
-                </label>
-                <div className="inline-form-actions">
-                  <button type="submit" className="btn-primary btn-sm" disabled={saving || !noteForm.content.trim()}>
-                    {saving ? <><Spinner /> Saving…</> : 'Add Note'}
-                  </button>
-                </div>
-              </form>
+                  <div className="inline-form-actions">
+                    <button type="submit" className="btn-primary btn-sm" disabled={saving || !noteForm.content.trim()}>
+                      {saving ? <><Spinner /> Saving…</> : 'Add Note'}
+                    </button>
+                  </div>
+                </form>
+              )}
 
               {notes.length === 0
                 ? <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>No notes yet.</p>
@@ -240,7 +249,9 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
                       <div className="note-header">
                         <span className={`badge ${NOTE_BADGE[note.noteType] ?? 'badge-note-general'}`}>{note.noteType}</span>
                         {note.createdBy && <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>{note.createdBy}</span>}
-                        <button className="note-delete" onClick={() => handleDeleteNote(note.id)} title="Delete">&#x2715;</button>
+                        {can('deleteNote') && (
+                          <button className="note-delete" onClick={() => handleDeleteNote(note.id)} title="Delete">&#x2715;</button>
+                        )}
                       </div>
                       <div className="note-content">{note.content}</div>
                       <div className="note-meta">{new Date(note.createdAt).toLocaleString()}</div>
@@ -252,8 +263,8 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
         </div>
 
         <div className="side-panel-actions">
-          <button className="btn-edit" onClick={onEdit}>Edit</button>
-          <button className="btn-delete" onClick={onDelete}>Delete</button>
+          {can('editEmployee') && <button className="btn-edit" onClick={onEdit}>Edit</button>}
+          {can('deleteEmployee') && <button className="btn-delete" onClick={onDelete}>Delete</button>}
         </div>
       </aside>
     </>

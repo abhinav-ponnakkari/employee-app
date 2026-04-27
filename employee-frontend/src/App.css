@@ -2,6 +2,76 @@
 
 body { font-family: system-ui, -apple-system, sans-serif; background: #111827; color: #f9fafb; }
 
+/* ── Login page ── */
+.login-page {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: #111827; padding: 1rem;
+}
+.login-card {
+  background: #1f2937; border: 1px solid #374151; border-radius: 16px;
+  padding: 2.5rem 2rem; width: 100%; max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.login-logo {
+  width: 64px; height: 64px; border-radius: 16px;
+  background: #1e3a5f; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+.login-title { font-size: 1.6rem; font-weight: 700; color: #f9fafb; text-align: center; margin-bottom: 0.35rem; }
+.login-subtitle { font-size: 0.875rem; color: #6b7280; text-align: center; margin-bottom: 1.75rem; }
+.login-error {
+  background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5;
+  border-radius: 8px; padding: 0.65rem 0.9rem; font-size: 0.85rem;
+  margin-bottom: 1rem; text-align: center;
+}
+.login-form { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
+.login-form label { font-size: 0.85rem; font-weight: 500; color: #d1d5db; display: flex; flex-direction: column; gap: 0.35rem; }
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 4rem; }
+.show-pass-btn {
+  position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: #6b7280;
+  font-size: 0.78rem; font-weight: 500; padding: 0.2rem 0.4rem;
+}
+.show-pass-btn:hover { color: #93c5fd; }
+.login-submit-btn { width: 100%; justify-content: center; padding: 0.65rem; font-size: 0.9rem; margin-top: 0.25rem; }
+
+.login-hint {
+  border-top: 1px solid #374151; padding-top: 1.25rem;
+}
+.login-hint-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #4b5563; margin-bottom: 0.6rem; }
+.login-hint-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.login-hint-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #111827; border: 1px solid #374151; border-radius: 6px;
+  padding: 0.4rem 0.6rem; cursor: pointer; width: 100%; text-align: left;
+  font-size: 0.82rem; color: #9ca3af;
+  transition: border-color 0.15s;
+}
+.login-hint-row:hover { border-color: #4b5563; color: #d1d5db; }
+.login-hint-row code { color: #e5e7eb; font-size: 0.82rem; }
+.login-hint-sep { color: #4b5563; }
+
+/* ── Role badges (header + login hints) ── */
+.role-badge {
+  display: inline-block; padding: 0.15rem 0.55rem; border-radius: 99px;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
+}
+.role-badge-admin  { background: #1e3a5f; color: #93c5fd; }
+.role-badge-hr     { background: #14532d; color: #86efac; }
+.role-badge-viewer { background: #374151; color: #9ca3af; }
+
+/* ── Header user section ── */
+.header-user { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+.header-username { font-size: 0.82rem; color: #d1d5db; white-space: nowrap; }
+.btn-logout {
+  background: none; border: 1px solid #374151; color: #9ca3af;
+  padding: 0.35rem 0.75rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem;
+  white-space: nowrap;
+}
+.btn-logout:hover { background: #374151; color: #f9fafb; }
+
 /* ── App layout ── */
 .app-layout { min-height: 100vh; display: flex; flex-direction: column; }
 
@@ -478,9 +548,14 @@ textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.
   .header-left { gap: 0.75rem; }
   .nav-tab { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
   .header-actions { gap: 0.4rem; }
+  .header-username { display: none; }
+  .btn-logout { padding: 0.3rem 0.55rem; }
 
   /* Leave stats — 1 column on mobile */
   .leave-stats { grid-template-columns: 1fr; gap: 0.75rem; }
+
+  /* Login card full-width on mobile */
+  .login-card { padding: 2rem 1.25rem; }
 }
 
 /* ================================================================

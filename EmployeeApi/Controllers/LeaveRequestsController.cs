@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EmployeeApi.Data;
@@ -7,6 +8,7 @@ namespace EmployeeApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class LeaveRequestsController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -29,6 +31,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Create(LeaveRequest request)
     {
         request.Status = "Pending";
@@ -39,6 +42,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpPatch("{id}/status")]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] LeaveStatusUpdate dto)
     {
         var request = await _db.LeaveRequests.FindAsync(id);
@@ -50,6 +54,7 @@ public class LeaveRequestsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var request = await _db.LeaveRequests.FindAsync(id);

@@ -6,6 +6,8 @@ import Dashboard from './components/Dashboard';
 import EmployeeDetail from './components/EmployeeDetail';
 import SearchFilter from './components/SearchFilter';
 import LeaveView from './components/LeaveView';
+import LoginPage from './components/LoginPage';
+import { useAuth } from './context/AuthContext';
 import { avatarColor, exportEmployeesToCSV } from './utils';
 import './App.css';
 
@@ -14,9 +16,7 @@ const PAGE_SIZE = 10;
 function Avatar({ emp }) {
   const initials = `${emp.firstName?.[0] ?? ''}${emp.lastName?.[0] ?? ''}`.toUpperCase();
   const color = avatarColor(emp.firstName + emp.lastName);
-  if (emp.photoUrl) {
-    return <img className="avatar" src={emp.photoUrl} alt={initials} />;
-  }
+  if (emp.photoUrl) return <img className="avatar" src={emp.photoUrl} alt={initials} />;
   return <div className={`avatar avatar-${color}`}>{initials}</div>;
 }
 
@@ -31,6 +31,14 @@ function SortIcon({ field, sortField, sortDir }) {
 }
 
 export default function App() {
+  const { isAuthenticated, user, logout, can } = useAuth();
+
+  if (!isAuthenticated) return <LoginPage />;
+
+  return <MainApp user={user} logout={logout} can={can} />;
+}
+
+function MainApp({ user, logout, can }) {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -57,7 +65,6 @@ export default function App() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Sync selected employee with fresh data after any reload
   useEffect(() => {
     if (selected) {
       const fresh = employees.find(e => e.id === selected.id);
@@ -67,11 +74,8 @@ export default function App() {
 
   const handleSave = async (data) => {
     try {
-      if (data.id) {
-        await updateEmployee(data.id, data);
-      } else {
-        await createEmployee(data);
-      }
+      if (data.id) await updateEmployee(data.id, data);
+      else await createEmployee(data);
       setShowForm(false);
       setEditing(null);
       load();
@@ -94,46 +98,40 @@ export default function App() {
   const handleSort = (field) => {
     setSortField(prev => {
       if (prev === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-      else { setSortDir('asc'); }
+      else setSortDir('asc');
       return field;
     });
     setPage(1);
   };
 
   const filtered = useMemo(() => {
-    let result = employees;
+    let r = employees;
     if (search) {
       const q = search.toLowerCase();
-      result = result.filter(e =>
+      r = r.filter(e =>
         `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
         e.email.toLowerCase().includes(q) ||
         (e.position ?? '').toLowerCase().includes(q)
       );
     }
-    if (filterDept) result = result.filter(e => e.department === filterDept);
-    if (filterStatus) result = result.filter(e => (e.status ?? 'Active') === filterStatus);
-    return result;
+    if (filterDept) r = r.filter(e => e.department === filterDept);
+    if (filterStatus) r = r.filter(e => (e.status ?? 'Active') === filterStatus);
+    return r;
   }, [employees, search, filterDept, filterStatus]);
 
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      let av = a[sortField] ?? '';
-      let bv = b[sortField] ?? '';
-      if (typeof av === 'string') av = av.toLowerCase();
-      if (typeof bv === 'string') bv = bv.toLowerCase();
-      if (av < bv) return sortDir === 'asc' ? -1 : 1;
-      if (av > bv) return sortDir === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [filtered, sortField, sortDir]);
+  const sorted = useMemo(() => [...filtered].sort((a, b) => {
+    let av = a[sortField] ?? '', bv = b[sortField] ?? '';
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  }), [filtered, sortField, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const openEdit = (emp) => {
-    setEditing(emp);
-    setShowForm(true);
-  };
+  const openEdit = (emp) => { setEditing(emp); setShowForm(true); };
 
   const pageNums = useMemo(() => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -159,46 +157,44 @@ export default function App() {
             </div>
           </div>
           <nav className="header-nav">
-            <button
-              className={`nav-tab ${activeView === 'employees' ? 'active' : ''}`}
-              onClick={() => setActiveView('employees')}
-            >
+            <button className={`nav-tab ${activeView === 'employees' ? 'active' : ''}`} onClick={() => setActiveView('employees')}>
               Employees
             </button>
-            <button
-              className={`nav-tab ${activeView === 'leave' ? 'active' : ''}`}
-              onClick={() => setActiveView('leave')}
-            >
+            <button className={`nav-tab ${activeView === 'leave' ? 'active' : ''}`} onClick={() => setActiveView('leave')}>
               Leave Requests
             </button>
           </nav>
         </div>
+
         <div className="header-actions">
           {activeView === 'employees' && (
             <>
-              <button className="btn-secondary" onClick={() => exportEmployeesToCSV(employees)}>
-                Export CSV
-              </button>
-              <button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>
-                + Add Employee
-              </button>
+              {can('exportCSV') && (
+                <button className="btn-secondary" onClick={() => exportEmployeesToCSV(employees)}>Export CSV</button>
+              )}
+              {can('addEmployee') && (
+                <button className="btn-primary" onClick={() => { setEditing(null); setShowForm(true); }}>+ Add Employee</button>
+              )}
             </>
           )}
+          <div className="header-user">
+            <span className={`role-badge role-badge-${user.role.toLowerCase()}`}>{user.role}</span>
+            <span className="header-username">{user.displayName}</span>
+            <button className="btn-logout" onClick={logout}>Logout</button>
+          </div>
         </div>
       </header>
 
       <main className="app-main">
         {error && (
           <div className="error-banner">
-            {error}
-            <button onClick={() => setError('')}>&#x2715;</button>
+            {error}<button onClick={() => setError('')}>&#x2715;</button>
           </div>
         )}
 
         {activeView === 'employees' && (
           <>
             <Dashboard employees={employees} departments={departments} />
-
             <div className="content-panel">
               <SearchFilter
                 search={search} onSearch={v => { setSearch(v); setPage(1); }}
@@ -209,67 +205,48 @@ export default function App() {
                 totalCount={employees.length}
                 onClear={() => { setSearch(''); setFilterDept(''); setFilterStatus(''); setPage(1); }}
               />
-
               <div className="table-wrap">
                 <table>
                   <thead>
                     <tr>
-                      <th className="sortable" onClick={() => handleSort('firstName')}>
-                        Name <SortIcon field="firstName" sortField={sortField} sortDir={sortDir} />
-                      </th>
-                      <th className="sortable" onClick={() => handleSort('position')}>
-                        Position <SortIcon field="position" sortField={sortField} sortDir={sortDir} />
-                      </th>
-                      <th className="sortable" onClick={() => handleSort('department')}>
-                        Department <SortIcon field="department" sortField={sortField} sortDir={sortDir} />
-                      </th>
-                      <th className="sortable" onClick={() => handleSort('salary')}>
-                        Salary <SortIcon field="salary" sortField={sortField} sortDir={sortDir} />
-                      </th>
-                      <th className="sortable" onClick={() => handleSort('status')}>
-                        Status <SortIcon field="status" sortField={sortField} sortDir={sortDir} />
-                      </th>
-                      <th className="sortable" onClick={() => handleSort('hireDate')}>
-                        Hire Date <SortIcon field="hireDate" sortField={sortField} sortDir={sortDir} />
-                      </th>
+                      <th className="sortable" onClick={() => handleSort('firstName')}>Name <SortIcon field="firstName" sortField={sortField} sortDir={sortDir} /></th>
+                      <th className="sortable" onClick={() => handleSort('position')}>Position <SortIcon field="position" sortField={sortField} sortDir={sortDir} /></th>
+                      <th className="sortable" onClick={() => handleSort('department')}>Department <SortIcon field="department" sortField={sortField} sortDir={sortDir} /></th>
+                      <th className="sortable" onClick={() => handleSort('salary')}>Salary <SortIcon field="salary" sortField={sortField} sortDir={sortDir} /></th>
+                      <th className="sortable" onClick={() => handleSort('status')}>Status <SortIcon field="status" sortField={sortField} sortDir={sortDir} /></th>
+                      <th className="sortable" onClick={() => handleSort('hireDate')}>Hire Date <SortIcon field="hireDate" sortField={sortField} sortDir={sortDir} /></th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginated.length === 0 ? (
                       <tr><td colSpan={7} className="empty">No employees found.</td></tr>
-                    ) : (
-                      paginated.map(emp => (
-                        <tr
-                          key={emp.id}
-                          className={selected?.id === emp.id ? 'row-selected' : ''}
-                          onClick={() => setSelected(emp)}
-                        >
-                          <td className="cell-name">
-                            <Avatar emp={emp} />
-                            <div>
-                              <div className="cell-name-text">{emp.firstName} {emp.lastName}</div>
-                              {emp.email && <div className="cell-name-sub">{emp.email}</div>}
-                            </div>
-                          </td>
-                          <td>{emp.position ?? <span className="muted">—</span>}</td>
-                          <td>{emp.department}</td>
-                          <td>${emp.salary.toLocaleString()}</td>
-                          <td><StatusBadge status={emp.status} /></td>
-                          <td>{new Date(emp.hireDate).toLocaleDateString()}</td>
-                          <td className="actions" onClick={e => e.stopPropagation()}>
-                            <div className="actions-inner">
-                              <button className="btn-edit" onClick={() => openEdit(emp)}>Edit</button>
-                              <button className="btn-delete" onClick={() => handleDelete(emp.id)}>Delete</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    ) : paginated.map(emp => (
+                      <tr key={emp.id} className={selected?.id === emp.id ? 'row-selected' : ''} onClick={() => setSelected(emp)}>
+                        <td className="cell-name">
+                          <Avatar emp={emp} />
+                          <div>
+                            <div className="cell-name-text">{emp.firstName} {emp.lastName}</div>
+                            {emp.email && <div className="cell-name-sub">{emp.email}</div>}
+                          </div>
+                        </td>
+                        <td>{emp.position ?? <span className="muted">—</span>}</td>
+                        <td>{emp.department}</td>
+                        <td>${emp.salary.toLocaleString()}</td>
+                        <td><StatusBadge status={emp.status} /></td>
+                        <td>{new Date(emp.hireDate).toLocaleDateString()}</td>
+                        <td className="actions" onClick={e => e.stopPropagation()}>
+                          <div className="actions-inner">
+                            {can('editEmployee') && <button className="btn-edit" onClick={() => openEdit(emp)}>Edit</button>}
+                            {can('deleteEmployee') && <button className="btn-delete" onClick={() => handleDelete(emp.id)}>Delete</button>}
+                            {!can('editEmployee') && !can('deleteEmployee') && <span className="muted" style={{ fontSize: '0.78rem' }}>View only</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-
               {totalPages > 1 && (
                 <div className="pagination">
                   <span className="page-info">
@@ -278,9 +255,7 @@ export default function App() {
                   <div className="page-controls">
                     <button onClick={() => setPage(1)} disabled={page === 1}>«</button>
                     <button onClick={() => setPage(p => p - 1)} disabled={page === 1}>‹</button>
-                    {pageNums.map(n => (
-                      <button key={n} onClick={() => setPage(n)} className={page === n ? 'page-active' : ''}>{n}</button>
-                    ))}
+                    {pageNums.map(n => <button key={n} onClick={() => setPage(n)} className={page === n ? 'page-active' : ''}>{n}</button>)}
                     <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages}>›</button>
                     <button onClick={() => setPage(totalPages)} disabled={page === totalPages}>»</button>
                   </div>
@@ -290,9 +265,7 @@ export default function App() {
           </>
         )}
 
-        {activeView === 'leave' && (
-          <LeaveView employees={employees} />
-        )}
+        {activeView === 'leave' && <LeaveView employees={employees} />}
       </main>
 
       {selected && activeView === 'employees' && (
@@ -305,7 +278,7 @@ export default function App() {
         />
       )}
 
-      {showForm && (
+      {showForm && can('addEmployee') && (
         <EmployeeForm
           employee={editing}
           departments={departments}

@@ -12,4 +12,5 @@ public class AppDbContext : DbContext
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<SalaryHistory> SalaryHistory => Set<SalaryHistory>();
     public DbSet<EmployeeNote> EmployeeNotes => Set<EmployeeNote>();
+    public DbSet<User> Users => Set<User>();
 }

@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using EmployeeApi.Data;
+using EmployeeApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +22,6 @@ if (rawUrl != null && (rawUrl.StartsWith("postgres://") || rawUrl.StartsWith("po
     var database = uri.AbsolutePath.TrimStart('/');
     var username = Uri.UnescapeDataString(userInfo[0]);
     var password = Uri.UnescapeDataString(userInfo[1]);
-    // Internal Render hostnames (.internal) do not use SSL
     var sslMode = host.Contains(".internal") ? "Disable" : "Require";
     connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode={sslMode};Trust Server Certificate=true";
 }
@@ -30,6 +33,28 @@ else
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+// JWT auth
+var jwtKey = builder.Configuration["Jwt:Key"]!;
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]!;
+var jwtAudience = builder.Configuration["Jwt:Audience"]!;
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(opts =>
+    {
+        opts.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy.AllowAnyOrigin()
@@ -38,7 +63,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Retry migrations in case the database isn't ready yet
+// Run migrations and seed default users
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -58,8 +83,21 @@ using (var scope = app.Services.CreateScope())
             Thread.Sleep(3000);
         }
     }
+
+    if (!db.Users.Any())
+    {
+        db.Users.AddRange(
+            new User { Username = "admin",  PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),  Role = "Admin",  DisplayName = "Administrator" },
+            new User { Username = "hr",     PasswordHash = BCrypt.Net.BCrypt.HashPassword("hr123"),     Role = "HR",     DisplayName = "HR Manager" },
+            new User { Username = "viewer", PasswordHash = BCrypt.Net.BCrypt.HashPassword("viewer123"), Role = "Viewer", DisplayName = "Staff Viewer" }
+        );
+        db.SaveChanges();
+        Console.WriteLine("Default users seeded.");
+    }
 }
 
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.Run();

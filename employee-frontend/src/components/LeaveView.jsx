@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getLeaveRequests, createLeaveRequest, updateLeaveStatus, deleteLeaveRequest } from '../api/leaveApi';
 import { avatarColor, calcDays } from '../utils';
+import { useAuth } from '../context/AuthContext';
 
 function Spinner() {
   return (
@@ -32,6 +33,7 @@ function Avatar({ emp }) {
 }
 
 export default function LeaveView({ employees }) {
+  const { can } = useAuth();
   const [requests, setRequests] = useState([]);
   const [filterStatus, setFilterStatus] = useState('');
   const [filterEmployee, setFilterEmployee] = useState('');
@@ -158,6 +160,7 @@ export default function LeaveView({ employees }) {
         {/* Filter bar */}
         <div className="search-filter">
           <div className="search-filter-controls">
+
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
               <option value="">All Status</option>
               <option value="Pending">Pending</option>
@@ -176,8 +179,11 @@ export default function LeaveView({ employees }) {
               </button>
             )}
           </div>
-          <div className="filter-result-count">
-            {filtered.length} request{filtered.length !== 1 ? 's' : ''}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            <span className="filter-result-count">{filtered.length} request{filtered.length !== 1 ? 's' : ''}</span>
+            {can('createLeave') && (
+              <button className="btn-primary" onClick={() => setShowForm(true)}>+ New Request</button>
+            )}
           </div>
         </div>
 
@@ -219,13 +225,16 @@ export default function LeaveView({ employees }) {
                     <td><LeaveStatusBadge status={req.status} /></td>
                     <td>
                       <div className="actions-inner">
-                        {req.status === 'Pending' && (
+                        {req.status === 'Pending' && can('approveLeave') && (
                           <>
                             <button className="btn-approve" onClick={() => handleApprove(req.id)}>Approve</button>
                             <button className="btn-reject-leave" onClick={() => { setRejectTarget(req.id); setRejectNote(''); }}>Reject</button>
                           </>
                         )}
-                        <button className="btn-delete" onClick={() => handleDelete(req.id)}>Delete</button>
+                        {can('deleteLeave') && (
+                          <button className="btn-delete" onClick={() => handleDelete(req.id)}>Delete</button>
+                        )}
+                        {!can('approveLeave') && !can('deleteLeave') && <span className="muted" style={{ fontSize: '0.78rem' }}>View only</span>}
                       </div>
                     </td>
                   </tr>

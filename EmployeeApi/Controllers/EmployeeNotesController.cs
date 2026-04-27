@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EmployeeApi.Data;
@@ -7,6 +8,7 @@ namespace EmployeeApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EmployeeNotesController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -20,6 +22,7 @@ public class EmployeeNotesController : ControllerBase
             .ToListAsync());
 
     [HttpPost]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Create(EmployeeNote note)
     {
         note.CreatedAt = DateTime.UtcNow;
@@ -29,6 +32,7 @@ public class EmployeeNotesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Delete(int id)
     {
         var note = await _db.EmployeeNotes.FindAsync(id);

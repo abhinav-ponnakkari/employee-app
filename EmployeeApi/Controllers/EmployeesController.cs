@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EmployeeApi.Data;
@@ -7,6 +8,7 @@ namespace EmployeeApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EmployeesController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -25,6 +27,7 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Create(Employee employee)
     {
         _db.Employees.Add(employee);
@@ -33,6 +36,7 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Update(int id, Employee employee)
     {
         if (id != employee.Id) return BadRequest();
@@ -47,6 +51,7 @@ public class EmployeesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var employee = await _db.Employees.FindAsync(id);
