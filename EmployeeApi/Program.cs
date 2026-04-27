@@ -10,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCompression(opts => opts.EnableForHttps = true);
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<EmployeeApi.Services.ChatService>();
 
 var rawUrl = Environment.GetEnvironmentVariable("DATABASE_URL")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");

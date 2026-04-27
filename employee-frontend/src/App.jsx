@@ -10,6 +10,8 @@ import { useAuth } from './context/AuthContext';
 import { avatarColor, exportEmployeesToCSV } from './utils';
 import './App.css';
 
+import ChatBot from './components/ChatBot';
+
 const Dashboard     = lazy(() => import('./components/Dashboard'));
 const EmployeePortal = lazy(() => import('./components/EmployeePortal'));
 const LeaveView     = lazy(() => import('./components/LeaveView'));
@@ -83,6 +85,7 @@ function EmployeePortalLayout({ user, logout }) {
           <EmployeePortal />
         </Suspense>
       </main>
+      <ChatBot />
     </div>
   );
 }
@@ -382,6 +385,7 @@ function MainApp({ user, logout, can }) {
           onCancel={() => { setShowForm(false); setEditing(null); }}
         />
       )}
+      <ChatBot />
     </div>
   );
 }
