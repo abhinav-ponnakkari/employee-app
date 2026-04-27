@@ -16,7 +16,7 @@ export default function AuditView() {
       if (filters.entityType) params.entityType = filters.entityType;
       if (filters.username) params.username = filters.username;
       const res = await getAuditLogs(params);
-      setLogs(res.data);
+      setLogs(res.data.items ?? []);
       setPage(1);
     } catch {
       setLogs([]);
