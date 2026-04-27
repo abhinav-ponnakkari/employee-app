@@ -191,17 +191,23 @@ td.actions { white-space: nowrap; }
 .badge-note-warning     { background: #713f12; color: #fde68a; }
 
 /* ── Buttons ── */
-.btn-primary { background: #2563eb; color: #fff; border: none; padding: 0.5rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; white-space: nowrap; }
+.btn-primary { background: #2563eb; color: #fff; border: none; padding: 0.5rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; }
 .btn-primary:hover { background: #1d4ed8; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.btn-secondary { background: #374151; color: #e5e7eb; border: 1px solid #4b5563; padding: 0.5rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; white-space: nowrap; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-spinner { width: 14px; height: 14px; flex-shrink: 0; animation: spin 0.75s linear infinite; }
+
+.btn-secondary { background: #374151; color: #e5e7eb; border: 1px solid #4b5563; padding: 0.5rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.4rem; }
 .btn-secondary:hover { background: #4b5563; }
+.btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-edit { background: #d97706; color: #fff; border: none; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
 .btn-edit:hover { background: #b45309; }
 
-.btn-delete { background: #dc2626; color: #fff; border: none; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+.btn-delete { background: #dc2626; color: #fff; border: none; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.4rem; }
 .btn-delete:hover { background: #b91c1c; }
+.btn-delete:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-approve { background: #15803d; color: #fff; border: none; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
 .btn-approve:hover { background: #166534; }

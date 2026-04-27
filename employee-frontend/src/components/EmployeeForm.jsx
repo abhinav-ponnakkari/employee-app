@@ -6,8 +6,18 @@ const empty = {
   status: 'Active', gender: '', dateOfBirth: '', photoUrl: '',
 };
 
+function Spinner() {
+  return (
+    <svg className="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <circle cx="12" cy="12" r="9" strokeOpacity=".25" />
+      <path d="M12 3a9 9 0 0 1 9 9" />
+    </svg>
+  );
+}
+
 export default function EmployeeForm({ employee, departments, onSave, onCancel }) {
   const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (employee) {
@@ -30,9 +40,10 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
 
   const set = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave({
+    setSaving(true);
+    await onSave({
       ...form,
       id: employee?.id ?? 0,
       salary: parseFloat(form.salary),
@@ -42,6 +53,7 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
       gender: form.gender || null,
       photoUrl: form.photoUrl || null,
     });
+    setSaving(false);
   };
 
   return (
@@ -116,8 +128,10 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
-            <button type="submit" className="btn-primary">Save Employee</button>
+            <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving}>Cancel</button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? <><Spinner /> Saving…</> : 'Save Employee'}
+            </button>
           </div>
         </form>
       </div>

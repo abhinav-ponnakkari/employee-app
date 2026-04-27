@@ -2,6 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getLeaveRequests, createLeaveRequest, updateLeaveStatus, deleteLeaveRequest } from '../api/leaveApi';
 import { avatarColor, calcDays } from '../utils';
 
+function Spinner() {
+  return (
+    <svg className="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <circle cx="12" cy="12" r="9" strokeOpacity=".25" />
+      <path d="M12 3a9 9 0 0 1 9 9" />
+    </svg>
+  );
+}
+
 const LEAVE_TYPES = ['Annual', 'Sick', 'Maternity', 'Paternity', 'Personal', 'Other'];
 const emptyForm = { employeeId: '', leaveType: 'Annual', startDate: '', endDate: '', reason: '' };
 
@@ -31,6 +40,8 @@ export default function LeaveView({ employees }) {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectNote, setRejectNote] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -63,12 +74,14 @@ export default function LeaveView({ employees }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       await createLeaveRequest({ ...form, employeeId: parseInt(form.employeeId) });
       setShowForm(false);
       setForm(emptyForm);
       load();
     } catch { setError('Failed to submit request.'); }
+    setSubmitting(false);
   };
 
   const handleApprove = async (id) => {
@@ -79,12 +92,14 @@ export default function LeaveView({ employees }) {
   };
 
   const handleReject = async () => {
+    setRejecting(true);
     try {
       await updateLeaveStatus(rejectTarget, { status: 'Rejected', reviewNote: rejectNote || null });
       setRejectTarget(null);
       setRejectNote('');
       load();
     } catch { setError('Failed to reject request.'); }
+    setRejecting(false);
   };
 
   const handleDelete = async (id) => {
@@ -258,8 +273,10 @@ export default function LeaveView({ employees }) {
                 </label>
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Submit Request</button>
+                <button type="button" className="btn-secondary" onClick={() => setShowForm(false)} disabled={submitting}>Cancel</button>
+                <button type="submit" className="btn-primary" disabled={submitting}>
+                  {submitting ? <><Spinner /> Submitting…</> : 'Submit Request'}
+                </button>
               </div>
             </form>
           </div>
@@ -281,8 +298,10 @@ export default function LeaveView({ employees }) {
               />
             </label>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setRejectTarget(null)}>Cancel</button>
-              <button className="btn-delete" onClick={handleReject}>Confirm Reject</button>
+              <button className="btn-secondary" onClick={() => setRejectTarget(null)} disabled={rejecting}>Cancel</button>
+              <button className="btn-delete" onClick={handleReject} disabled={rejecting}>
+                {rejecting ? <><Spinner /> Rejecting…</> : 'Confirm Reject'}
+              </button>
             </div>
           </div>
         </div>

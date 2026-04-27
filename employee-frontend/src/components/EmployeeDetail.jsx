@@ -3,6 +3,15 @@ import { avatarColor } from '../utils';
 import { getSalaryHistory, addSalaryHistory, deleteSalaryHistory } from '../api/salaryHistoryApi';
 import { getNotes, addNote, deleteNote } from '../api/notesApi';
 
+function Spinner() {
+  return (
+    <svg className="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <circle cx="12" cy="12" r="9" strokeOpacity=".25" />
+      <path d="M12 3a9 9 0 0 1 9 9" />
+    </svg>
+  );
+}
+
 const AVATAR_COLORS_MAP = ['blue', 'green', 'purple', 'orange', 'teal'];
 
 const NOTE_TYPES = ['General', 'HR', 'Performance', 'Warning'];
@@ -181,7 +190,9 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
                     <input value={salaryForm.reason} onChange={e => setSalaryForm(f => ({ ...f, reason: e.target.value }))} placeholder="e.g. Annual review" />
                   </label>
                   <div className="inline-form-actions">
-                    <button type="submit" className="btn-primary btn-sm" disabled={saving}>Save</button>
+                    <button type="submit" className="btn-primary btn-sm" disabled={saving}>
+                      {saving ? <><Spinner /> Saving…</> : 'Save'}
+                    </button>
                   </div>
                 </form>
               )}
@@ -216,7 +227,9 @@ export default function EmployeeDetail({ employee: emp, onEdit, onDelete, onClos
                   <textarea value={noteForm.content} onChange={e => setNoteForm(f => ({ ...f, content: e.target.value }))} rows={3} placeholder="Add an internal note..." required />
                 </label>
                 <div className="inline-form-actions">
-                  <button type="submit" className="btn-primary btn-sm" disabled={saving || !noteForm.content.trim()}>Add Note</button>
+                  <button type="submit" className="btn-primary btn-sm" disabled={saving || !noteForm.content.trim()}>
+                    {saving ? <><Spinner /> Saving…</> : 'Add Note'}
+                  </button>
                 </div>
               </form>
 
