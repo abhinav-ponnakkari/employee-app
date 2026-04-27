@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using EmployeeApi.Data;
 using EmployeeApi.Models;
+using EmployeeApi.Services;
 
 namespace EmployeeApi.Controllers;
 
@@ -13,8 +14,13 @@ namespace EmployeeApi.Controllers;
 public class EmployeesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly AuditService _audit;
 
-    public EmployeesController(AppDbContext db) => _db = db;
+    public EmployeesController(AppDbContext db, AuditService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     [HttpGet]
     [Authorize(Roles = "Admin,HR")]
@@ -46,6 +52,10 @@ public class EmployeesController : ControllerBase
     {
         _db.Employees.Add(employee);
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Created", "Employee", employee.Id, username, $"{employee.FirstName} {employee.LastName}");
+
         return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee);
     }
 
@@ -61,6 +71,10 @@ public class EmployeesController : ControllerBase
             if (!await _db.Employees.AnyAsync(e => e.Id == id)) return NotFound();
             throw;
         }
+
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Updated", "Employee", id, username, $"{employee.FirstName} {employee.LastName}");
+
         return NoContent();
     }
 
@@ -72,6 +86,10 @@ public class EmployeesController : ControllerBase
         if (employee is null) return NotFound();
         _db.Employees.Remove(employee);
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Deleted", "Employee", id, username, $"ID {id}");
+
         return NoContent();
     }
 
