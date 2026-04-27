@@ -1,21 +1,26 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from './api/employeeApi';
 import { getDepartments } from './api/departmentApi';
 import { getUsers, createUser, resetPassword } from './api/usersApi';
 import EmployeeForm from './components/EmployeeForm';
-import Dashboard from './components/Dashboard';
 import EmployeeDetail from './components/EmployeeDetail';
 import SearchFilter from './components/SearchFilter';
-import LeaveView from './components/LeaveView';
 import LoginPage from './components/LoginPage';
-import EmployeePortal from './components/EmployeePortal';
-import CircularsView from './components/CircularsView';
-import UsersView from './components/UsersView';
-import PayrollView from './components/PayrollView';
-import AuditView from './components/AuditView';
 import { useAuth } from './context/AuthContext';
 import { avatarColor, exportEmployeesToCSV } from './utils';
 import './App.css';
+
+const Dashboard     = lazy(() => import('./components/Dashboard'));
+const EmployeePortal = lazy(() => import('./components/EmployeePortal'));
+const LeaveView     = lazy(() => import('./components/LeaveView'));
+const CircularsView = lazy(() => import('./components/CircularsView'));
+const UsersView     = lazy(() => import('./components/UsersView'));
+const PayrollView   = lazy(() => import('./components/PayrollView'));
+const AuditView     = lazy(() => import('./components/AuditView'));
+
+function ViewLoader() {
+  return <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>Loading…</div>;
+}
 
 const PAGE_SIZE = 10;
 
@@ -74,7 +79,9 @@ function EmployeePortalLayout({ user, logout }) {
         </div>
       </header>
       <main className="app-main" style={{ padding: 0 }}>
-        <EmployeePortal />
+        <Suspense fallback={<ViewLoader />}>
+          <EmployeePortal />
+        </Suspense>
       </main>
     </div>
   );
@@ -274,7 +281,9 @@ function MainApp({ user, logout, can }) {
 
         {activeView === 'employees' && (
           <>
-            <Dashboard employees={employees} departments={departments} />
+            <Suspense fallback={<ViewLoader />}>
+              <Dashboard employees={employees} departments={departments} />
+            </Suspense>
             <div className="content-panel">
               <SearchFilter
                 search={search} onSearch={v => { handleSearch(v); }}
@@ -345,11 +354,13 @@ function MainApp({ user, logout, can }) {
           </>
         )}
 
-        {activeView === 'leave' && <LeaveView employees={employees} />}
-        {activeView === 'circulars' && <CircularsView />}
-        {activeView === 'payroll' && <PayrollView employees={employees} />}
-        {activeView === 'users' && <UsersView />}
-        {activeView === 'audit' && <AuditView />}
+        <Suspense fallback={<ViewLoader />}>
+          {activeView === 'leave' && <LeaveView employees={employees} />}
+          {activeView === 'circulars' && <CircularsView />}
+          {activeView === 'payroll' && <PayrollView employees={employees} />}
+          {activeView === 'users' && <UsersView />}
+          {activeView === 'audit' && <AuditView />}
+        </Suspense>
       </main>
 
       {selected && activeView === 'employees' && (
