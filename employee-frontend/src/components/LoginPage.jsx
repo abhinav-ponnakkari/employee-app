@@ -31,9 +31,16 @@ export default function LoginPage() {
     try {
       await login(username, password);
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Invalid username or password');
+      if (!err.response) {
+        setError('Cannot reach the server. Please check your connection or try again later.');
+      } else if (err.response.status === 401) {
+        setError('Invalid username or password.');
+      } else {
+        setError(err.response?.data?.message ?? 'Login failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fillDemo = (cred) => {
