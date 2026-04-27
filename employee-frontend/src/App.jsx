@@ -11,6 +11,8 @@ import LoginPage from './components/LoginPage';
 import EmployeePortal from './components/EmployeePortal';
 import CircularsView from './components/CircularsView';
 import UsersView from './components/UsersView';
+import PayrollView from './components/PayrollView';
+import AuditView from './components/AuditView';
 import { useAuth } from './context/AuthContext';
 import { avatarColor, exportEmployeesToCSV } from './utils';
 import './App.css';
@@ -230,9 +232,19 @@ function MainApp({ user, logout, can }) {
             <button className={`nav-tab ${activeView === 'circulars' ? 'active' : ''}`} onClick={() => setActiveView('circulars')}>
               Circulars
             </button>
+            {(user.role === 'Admin' || user.role === 'HR') && (
+              <button className={`nav-tab ${activeView === 'payroll' ? 'active' : ''}`} onClick={() => setActiveView('payroll')}>
+                Payroll
+              </button>
+            )}
             {user.role === 'Admin' && (
               <button className={`nav-tab ${activeView === 'users' ? 'active' : ''}`} onClick={() => setActiveView('users')}>
                 User Accounts
+              </button>
+            )}
+            {user.role === 'Admin' && (
+              <button className={`nav-tab ${activeView === 'audit' ? 'active' : ''}`} onClick={() => setActiveView('audit')}>
+                Audit Log
               </button>
             )}
           </nav>
@@ -339,7 +351,9 @@ function MainApp({ user, logout, can }) {
 
         {activeView === 'leave' && <LeaveView employees={employees} />}
         {activeView === 'circulars' && <CircularsView />}
+        {activeView === 'payroll' && <PayrollView employees={employees} />}
         {activeView === 'users' && <UsersView />}
+        {activeView === 'audit' && <AuditView />}
       </main>
 
       {selected && activeView === 'employees' && (
