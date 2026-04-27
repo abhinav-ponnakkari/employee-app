@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using EmployeeApi.Data;
+using EmployeeApi.Services;
 
 namespace EmployeeApi.Controllers;
 
@@ -14,11 +15,13 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
+    private readonly AuditService _audit;
 
-    public AuthController(AppDbContext db, IConfiguration config)
+    public AuthController(AppDbContext db, IConfiguration config, AuditService audit)
     {
         _db = db;
         _config = config;
+        _audit = audit;
     }
 
     [HttpPost("login")]
@@ -47,6 +50,8 @@ public class AuthController : ControllerBase
             expires: DateTime.UtcNow.AddHours(8),
             signingCredentials: creds
         );
+
+        await _audit.LogAsync("Login", "System", null, user.Username, $"Role: {user.Role}");
 
         return Ok(new
         {

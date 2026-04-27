@@ -15,4 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<PunchRecord> PunchRecords => Set<PunchRecord>();
     public DbSet<Circular> Circulars => Set<Circular>();
+    public DbSet<Payroll> Payrolls => Set<Payroll>();
+    public DbSet<PayrollItem> PayrollItems => Set<PayrollItem>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 }

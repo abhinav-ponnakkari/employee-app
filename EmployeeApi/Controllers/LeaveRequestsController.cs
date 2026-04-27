@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using EmployeeApi.Data;
 using EmployeeApi.Models;
+using EmployeeApi.Services;
 
 namespace EmployeeApi.Controllers;
 
@@ -13,7 +14,13 @@ namespace EmployeeApi.Controllers;
 public class LeaveRequestsController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public LeaveRequestsController(AppDbContext db) => _db = db;
+    private readonly AuditService _audit;
+
+    public LeaveRequestsController(AppDbContext db, AuditService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? employeeId, [FromQuery] string? status)
@@ -61,6 +68,10 @@ public class LeaveRequestsController : ControllerBase
         request.CreatedAt = DateTime.UtcNow;
         _db.LeaveRequests.Add(request);
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Created", "Leave", request.Id, username, $"Employee #{request.EmployeeId} - {request.LeaveType}");
+
         return CreatedAtAction(nameof(GetById), new { id = request.Id }, request);
     }
 
@@ -73,6 +84,13 @@ public class LeaveRequestsController : ControllerBase
         request.Status = dto.Status;
         request.ReviewNote = dto.ReviewNote;
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        if (dto.Status == "Approved")
+            await _audit.LogAsync("Approved", "Leave", id, username, null);
+        else if (dto.Status == "Rejected")
+            await _audit.LogAsync("Rejected", "Leave", id, username, dto.ReviewNote);
+
         return NoContent();
     }
 
@@ -84,6 +102,10 @@ public class LeaveRequestsController : ControllerBase
         if (request is null) return NotFound();
         _db.LeaveRequests.Remove(request);
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Deleted", "Leave", id, username, null);
+
         return NoContent();
     }
 

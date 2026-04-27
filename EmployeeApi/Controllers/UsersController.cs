@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using EmployeeApi.Data;
 using EmployeeApi.Models;
+using EmployeeApi.Services;
 
 namespace EmployeeApi.Controllers;
 
@@ -12,7 +13,13 @@ namespace EmployeeApi.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public UsersController(AppDbContext db) => _db = db;
+    private readonly AuditService _audit;
+
+    public UsersController(AppDbContext db, AuditService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
@@ -46,6 +53,10 @@ public class UsersController : ControllerBase
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Created", "User", user.Id, username, $"{user.Username} ({user.Role})");
+
         return Ok(new { user.Id, user.Username, user.Role, user.DisplayName, user.EmployeeId });
     }
 
@@ -56,6 +67,10 @@ public class UsersController : ControllerBase
         if (user is null) return NotFound();
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("PasswordReset", "User", id, username, null);
+
         return NoContent();
     }
 
@@ -80,6 +95,10 @@ public class UsersController : ControllerBase
         if (user is null) return NotFound();
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
+
+        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Deleted", "User", id, username, $"ID {id}");
+
         return NoContent();
     }
 }
