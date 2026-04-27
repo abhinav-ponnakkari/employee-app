@@ -61,6 +61,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<EmployeeApi.Services.AuditService>();
+builder.Services.AddSingleton<EmployeeApi.Services.EmailService>();
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using EmployeeApi.Data;
 using EmployeeApi.Models;
 using EmployeeApi.Services;
@@ -14,11 +15,13 @@ public class UsersController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
+    private readonly EmailService _email;
 
-    public UsersController(AppDbContext db, AuditService audit)
+    public UsersController(AppDbContext db, AuditService audit, EmailService email)
     {
         _db = db;
         _audit = audit;
+        _email = email;
     }
 
     [HttpGet]
@@ -54,8 +57,19 @@ public class UsersController : ControllerBase
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
-        await _audit.LogAsync("Created", "User", user.Id, username, $"{user.Username} ({user.Role})");
+        var actor = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Created", "User", user.Id, actor, $"{user.Username} ({user.Role})");
+
+        // Send welcome email to linked employee's email address
+        if (dto.EmployeeId.HasValue)
+        {
+            var emp = await _db.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == dto.EmployeeId.Value);
+            if (emp is not null && !string.IsNullOrWhiteSpace(emp.Email))
+            {
+                var (subject, html) = EmailTemplates.Welcome(dto.DisplayName, dto.Username, dto.Role);
+                _ = _email.SendAsync(emp.Email, subject, html);
+            }
+        }
 
         return Ok(new { user.Id, user.Username, user.Role, user.DisplayName, user.EmployeeId });
     }
@@ -68,8 +82,19 @@ public class UsersController : ControllerBase
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
         await _db.SaveChangesAsync();
 
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
-        await _audit.LogAsync("PasswordReset", "User", id, username, null);
+        var actor = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("PasswordReset", "User", id, actor, null);
+
+        // Notify the employee via email
+        if (user.EmployeeId.HasValue)
+        {
+            var emp = await _db.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == user.EmployeeId.Value);
+            if (emp is not null && !string.IsNullOrWhiteSpace(emp.Email))
+            {
+                var (subject, html) = EmailTemplates.PasswordReset(user.DisplayName);
+                _ = _email.SendAsync(emp.Email, subject, html);
+            }
+        }
 
         return NoContent();
     }
@@ -89,15 +114,15 @@ public class UsersController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var me = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        var me = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         if (id == me) return BadRequest(new { message = "Cannot delete your own account." });
         var user = await _db.Users.FindAsync(id);
         if (user is null) return NotFound();
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
 
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
-        await _audit.LogAsync("Deleted", "User", id, username, $"ID {id}");
+        var actor = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        await _audit.LogAsync("Deleted", "User", id, actor, $"ID {id}");
 
         return NoContent();
     }

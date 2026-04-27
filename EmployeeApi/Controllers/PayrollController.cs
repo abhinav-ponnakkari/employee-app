@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using EmployeeApi.Data;
 using EmployeeApi.Models;
 using EmployeeApi.Services;
@@ -14,11 +15,13 @@ public class PayrollController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
+    private readonly EmailService _email;
 
-    public PayrollController(AppDbContext db, AuditService audit)
+    public PayrollController(AppDbContext db, AuditService audit, EmailService email)
     {
         _db = db;
         _audit = audit;
+        _email = email;
     }
 
     [HttpGet]
@@ -29,7 +32,6 @@ public class PayrollController : ControllerBase
     {
         var query = _db.Payrolls.Include(p => p.Items).AsQueryable();
 
-        // Employee role: only see own payrolls
         if (User.IsInRole("Employee"))
         {
             var empIdClaim = User.FindFirst("employeeId")?.Value;
@@ -68,7 +70,7 @@ public class PayrollController : ControllerBase
     [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Create([FromBody] CreatePayrollDto dto)
     {
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
 
         var payroll = new Payroll
         {
@@ -95,7 +97,7 @@ public class PayrollController : ControllerBase
     [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> AddItem(int id, [FromBody] AddPayrollItemDto dto)
     {
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
 
         var payroll = await _db.Payrolls.Include(p => p.Items).FirstOrDefaultAsync(p => p.Id == id);
         if (payroll is null) return NotFound();
@@ -121,7 +123,7 @@ public class PayrollController : ControllerBase
     [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> DeleteItem(int id, int itemId)
     {
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
 
         var payroll = await _db.Payrolls.Include(p => p.Items).FirstOrDefaultAsync(p => p.Id == id);
         if (payroll is null) return NotFound();
@@ -142,7 +144,7 @@ public class PayrollController : ControllerBase
     [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Finalize(int id)
     {
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
 
         var payroll = await _db.Payrolls.Include(p => p.Items).FirstOrDefaultAsync(p => p.Id == id);
         if (payroll is null) return NotFound();
@@ -152,6 +154,25 @@ public class PayrollController : ControllerBase
 
         await _audit.LogAsync("Finalized", "Payroll", id, username, null);
 
+        // Send payslip email to employee
+        var emp = await _db.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == payroll.EmployeeId);
+        if (emp is not null && !string.IsNullOrWhiteSpace(emp.Email))
+        {
+            var monthNames = new[] { "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec" };
+            var monthYear = $"{monthNames[payroll.Month - 1]} {payroll.Year}";
+            var allowances = payroll.Items.Where(i => i.Type == "Allowance").Sum(i => i.Amount);
+            var deductions = payroll.Items.Where(i => i.Type == "Deduction").Sum(i => i.Amount);
+
+            var (subject, html) = EmailTemplates.Payslip(
+                $"{emp.FirstName} {emp.LastName}",
+                monthYear,
+                payroll.BaseSalary,
+                allowances,
+                deductions,
+                payroll.NetPay);
+            _ = _email.SendAsync(emp.Email, subject, html);
+        }
+
         return Ok(payroll);
     }
 
@@ -159,7 +180,7 @@ public class PayrollController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var username = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
 
         var payroll = await _db.Payrolls.FindAsync(id);
         if (payroll is null) return NotFound();

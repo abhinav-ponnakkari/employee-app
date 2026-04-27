@@ -15,17 +15,18 @@ public class LeaveRequestsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
+    private readonly EmailService _email;
 
-    public LeaveRequestsController(AppDbContext db, AuditService audit)
+    public LeaveRequestsController(AppDbContext db, AuditService audit, EmailService email)
     {
         _db = db;
         _audit = audit;
+        _email = email;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? employeeId, [FromQuery] string? status)
     {
-        // Employee role: only see own requests
         if (User.IsInRole("Employee"))
         {
             var myId = GetLinkedEmployeeId();
@@ -47,7 +48,6 @@ public class LeaveRequestsController : ControllerBase
     {
         var r = await _db.LeaveRequests.FindAsync(id);
         if (r is null) return NotFound();
-        // Employee can only see their own
         if (User.IsInRole("Employee") && r.EmployeeId != GetLinkedEmployeeId()) return Forbid();
         return Ok(r);
     }
@@ -56,7 +56,6 @@ public class LeaveRequestsController : ControllerBase
     [Authorize(Roles = "Admin,HR,Employee")]
     public async Task<IActionResult> Create(LeaveRequest request)
     {
-        // Employee can only submit for themselves
         if (User.IsInRole("Employee"))
         {
             var myId = GetLinkedEmployeeId();
@@ -81,6 +80,7 @@ public class LeaveRequestsController : ControllerBase
     {
         var request = await _db.LeaveRequests.FindAsync(id);
         if (request is null) return NotFound();
+
         request.Status = dto.Status;
         request.ReviewNote = dto.ReviewNote;
         await _db.SaveChangesAsync();
@@ -90,6 +90,20 @@ public class LeaveRequestsController : ControllerBase
             await _audit.LogAsync("Approved", "Leave", id, username, null);
         else if (dto.Status == "Rejected")
             await _audit.LogAsync("Rejected", "Leave", id, username, dto.ReviewNote);
+
+        // Send email notification to employee
+        var emp = await _db.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == request.EmployeeId);
+        if (emp is not null && !string.IsNullOrWhiteSpace(emp.Email))
+        {
+            var (subject, html) = EmailTemplates.LeaveStatusUpdate(
+                $"{emp.FirstName} {emp.LastName}",
+                request.LeaveType,
+                request.StartDate.ToString("MMM d, yyyy"),
+                request.EndDate.ToString("MMM d, yyyy"),
+                dto.Status,
+                dto.ReviewNote);
+            _ = _email.SendAsync(emp.Email, subject, html);
+        }
 
         return NoContent();
     }
