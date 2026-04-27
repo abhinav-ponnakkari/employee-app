@@ -488,6 +488,18 @@ textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.
 }
 .note-delete:hover { background: #374151; color: #fca5a5; }
 
+/* ── Employee form login section ── */
+.form-hint { font-size: 0.75rem; color: #6b7280; font-weight: 400; margin-left: 0.3rem; }
+.login-status-row {
+  display: flex; align-items: center; gap: 0.45rem;
+  font-size: 0.85rem; color: #9ca3af; padding: 0.4rem 0;
+}
+.login-status-row strong { color: #86efac; }
+.login-field-error {
+  background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5;
+  border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.82rem;
+}
+
 /* ================================================================
    EMPLOYEE PORTAL
    ================================================================ */

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from './api/employeeApi';
 import { getDepartments } from './api/departmentApi';
+import { getUsers, createUser, resetPassword } from './api/usersApi';
 import EmployeeForm from './components/EmployeeForm';
 import Dashboard from './components/Dashboard';
 import EmployeeDetail from './components/EmployeeDetail';
@@ -9,6 +10,7 @@ import LeaveView from './components/LeaveView';
 import LoginPage from './components/LoginPage';
 import EmployeePortal from './components/EmployeePortal';
 import CircularsView from './components/CircularsView';
+import UsersView from './components/UsersView';
 import { useAuth } from './context/AuthContext';
 import { avatarColor, exportEmployeesToCSV } from './utils';
 import './App.css';
@@ -79,6 +81,7 @@ function EmployeePortalLayout({ user, logout }) {
 function MainApp({ user, logout, can }) {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [users, setUsers] = useState([]);
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -93,13 +96,16 @@ function MainApp({ user, logout, can }) {
 
   const load = useCallback(async () => {
     try {
-      const [empRes, deptRes] = await Promise.all([getEmployees(), getDepartments()]);
+      const calls = [getEmployees(), getDepartments()];
+      if (can('manageUsers')) calls.push(getUsers());
+      const [empRes, deptRes, usersRes] = await Promise.all(calls);
       setEmployees(empRes.data);
       setDepartments(deptRes.data);
+      if (usersRes) setUsers(usersRes.data);
     } catch {
       setError('Failed to load data. Is the backend running?');
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);
 
@@ -110,15 +116,35 @@ function MainApp({ user, logout, can }) {
     }
   }, [employees]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSave = async (data) => {
+  const handleSave = async (empData, loginData) => {
     try {
-      if (data.id) await updateEmployee(data.id, data);
-      else await createEmployee(data);
+      let savedId = empData.id;
+      if (empData.id) {
+        await updateEmployee(empData.id, empData);
+      } else {
+        const res = await createEmployee(empData);
+        savedId = res.data.id;
+      }
+
+      if (loginData?.password) {
+        if (loginData.userId) {
+          await resetPassword(loginData.userId, loginData.password);
+        } else if (loginData.username) {
+          await createUser({
+            username: loginData.username,
+            password: loginData.password,
+            role: 'Employee',
+            displayName: `${empData.firstName} ${empData.lastName}`,
+            employeeId: savedId,
+          });
+        }
+      }
+
       setShowForm(false);
       setEditing(null);
       load();
-    } catch {
-      setError('Failed to save employee.');
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Failed to save employee.');
     }
   };
 
@@ -204,6 +230,11 @@ function MainApp({ user, logout, can }) {
             <button className={`nav-tab ${activeView === 'circulars' ? 'active' : ''}`} onClick={() => setActiveView('circulars')}>
               Circulars
             </button>
+            {user.role === 'Admin' && (
+              <button className={`nav-tab ${activeView === 'users' ? 'active' : ''}`} onClick={() => setActiveView('users')}>
+                User Accounts
+              </button>
+            )}
           </nav>
         </div>
 
@@ -308,6 +339,7 @@ function MainApp({ user, logout, can }) {
 
         {activeView === 'leave' && <LeaveView employees={employees} />}
         {activeView === 'circulars' && <CircularsView />}
+        {activeView === 'users' && <UsersView />}
       </main>
 
       {selected && activeView === 'employees' && (
@@ -324,6 +356,7 @@ function MainApp({ user, logout, can }) {
         <EmployeeForm
           employee={editing}
           departments={departments}
+          linkedUser={editing ? users.find(u => u.employeeId === editing.id) ?? null : null}
           onSave={handleSave}
           onCancel={() => { setShowForm(false); setEditing(null); }}
         />

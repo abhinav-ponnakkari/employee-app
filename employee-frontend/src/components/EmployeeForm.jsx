@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const empty = {
+const emptyEmp = {
   firstName: '', lastName: '', email: '', phone: '',
   department: '', position: '', salary: '', hireDate: '',
   status: 'Active', gender: '', dateOfBirth: '', photoUrl: '',
@@ -15,14 +15,18 @@ function Spinner() {
   );
 }
 
-export default function EmployeeForm({ employee, departments, onSave, onCancel }) {
-  const [form, setForm] = useState(empty);
+// onSave(empData, loginData)
+// loginData = { username, password, userId } — all optional
+export default function EmployeeForm({ employee, departments, linkedUser, onSave, onCancel }) {
+  const [form, setForm] = useState(emptyEmp);
+  const [login, setLogin] = useState({ username: '', password: '', confirm: '' });
   const [saving, setSaving] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     if (employee) {
       setForm({
-        ...empty,
+        ...emptyEmp,
         ...employee,
         salary: employee.salary.toString(),
         hireDate: employee.hireDate.split('T')[0],
@@ -34,16 +38,30 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
         photoUrl: employee.photoUrl ?? '',
       });
     } else {
-      setForm(empty);
+      setForm(emptyEmp);
     }
+    setLogin({ username: '', password: '', confirm: '' });
+    setLoginError('');
   }, [employee]);
 
   const set = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const setL = (e) => { setLogin({ ...login, [e.target.name]: e.target.value }); setLoginError(''); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoginError('');
+
+    // Validate login fields if any are filled
+    const wantsLogin = linkedUser ? !!login.password : !!(login.username || login.password);
+    if (wantsLogin) {
+      if (!linkedUser && !login.username) { setLoginError('Username is required to set login access.'); return; }
+      if (!login.password) { setLoginError('Password is required.'); return; }
+      if (login.password.length < 6) { setLoginError('Password must be at least 6 characters.'); return; }
+      if (login.password !== login.confirm) { setLoginError('Passwords do not match.'); return; }
+    }
+
     setSaving(true);
-    await onSave({
+    const empData = {
       ...form,
       id: employee?.id ?? 0,
       salary: parseFloat(form.salary),
@@ -52,7 +70,12 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
       position: form.position || null,
       gender: form.gender || null,
       photoUrl: form.photoUrl || null,
-    });
+    };
+    const loginData = wantsLogin
+      ? { username: linkedUser ? linkedUser.username : login.username, password: login.password, userId: linkedUser?.id ?? null }
+      : null;
+
+    await onSave(empData, loginData);
     setSaving(false);
   };
 
@@ -64,7 +87,6 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
           <div className="form-grid">
 
             <div className="form-section-title">Basic Information</div>
-
             <label>First Name
               <input name="firstName" value={form.firstName} onChange={set} required />
             </label>
@@ -79,7 +101,6 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
             </label>
 
             <div className="form-section-title">Employment Details</div>
-
             <label>Position / Job Title
               <input name="position" value={form.position} onChange={set} placeholder="e.g. Senior Engineer" />
             </label>
@@ -110,7 +131,6 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
             </label>
 
             <div className="form-section-title">Personal Information</div>
-
             <label>Gender
               <select name="gender" value={form.gender} onChange={set}>
                 <option value="">Prefer not to say</option>
@@ -125,6 +145,43 @@ export default function EmployeeForm({ employee, departments, onSave, onCancel }
             <label className="form-full">Photo URL
               <input name="photoUrl" value={form.photoUrl} onChange={set} placeholder="https://... (optional)" />
             </label>
+
+            {/* ── Login Access ── */}
+            <div className="form-section-title form-full">Login Access</div>
+
+            {linkedUser ? (
+              <>
+                <div className="form-full login-status-row">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#86efac" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Active login: <strong>{linkedUser.username}</strong></span>
+                </div>
+                <label>New Password <span className="form-hint">(leave blank to keep current)</span>
+                  <input type="password" name="password" value={login.password} onChange={setL} autoComplete="new-password" placeholder="Enter new password" />
+                </label>
+                <label>Confirm Password
+                  <input type="password" name="confirm" value={login.confirm} onChange={setL} autoComplete="new-password" placeholder="Repeat new password" />
+                </label>
+              </>
+            ) : (
+              <>
+                <div className="form-full" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                  Assign login credentials so this employee can access the portal. Leave blank to skip.
+                </div>
+                <label>Username
+                  <input name="username" value={login.username} onChange={setL} autoComplete="off" placeholder="e.g. john.doe" />
+                </label>
+                <label>Password
+                  <input type="password" name="password" value={login.password} onChange={setL} autoComplete="new-password" placeholder="Min. 6 characters" />
+                </label>
+                <label className="form-full">Confirm Password
+                  <input type="password" name="confirm" value={login.confirm} onChange={setL} autoComplete="new-password" placeholder="Repeat password" />
+                </label>
+              </>
+            )}
+
+            {loginError && (
+              <div className="form-full login-field-error">{loginError}</div>
+            )}
           </div>
 
           <div className="modal-actions">

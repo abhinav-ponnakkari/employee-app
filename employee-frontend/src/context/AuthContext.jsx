@@ -11,6 +11,8 @@ const ROLE_PERMISSIONS = {
     'exportCSV',
     'manageCirculars',
   ],
+  // Admin gets everything via the `user.role === 'Admin'` check above,
+  // so manageUsers doesn't need to be listed here.
   Employee: [
     'viewOwnProfile',
     'createLeave',
