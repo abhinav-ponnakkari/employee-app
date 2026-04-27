@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using EmployeeApi.Data;
 using EmployeeApi.Models;
 
@@ -17,6 +18,17 @@ public class LeaveRequestsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? employeeId, [FromQuery] string? status)
     {
+        // Employee role: only see own requests
+        if (User.IsInRole("Employee"))
+        {
+            var myId = GetLinkedEmployeeId();
+            if (myId is null) return Ok(Array.Empty<LeaveRequest>());
+            return Ok(await _db.LeaveRequests
+                .Where(r => r.EmployeeId == myId.Value)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync());
+        }
+
         var query = _db.LeaveRequests.AsQueryable();
         if (employeeId.HasValue) query = query.Where(r => r.EmployeeId == employeeId.Value);
         if (!string.IsNullOrEmpty(status)) query = query.Where(r => r.Status == status);
@@ -27,13 +39,24 @@ public class LeaveRequestsController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var r = await _db.LeaveRequests.FindAsync(id);
-        return r is null ? NotFound() : Ok(r);
+        if (r is null) return NotFound();
+        // Employee can only see their own
+        if (User.IsInRole("Employee") && r.EmployeeId != GetLinkedEmployeeId()) return Forbid();
+        return Ok(r);
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,HR")]
+    [Authorize(Roles = "Admin,HR,Employee")]
     public async Task<IActionResult> Create(LeaveRequest request)
     {
+        // Employee can only submit for themselves
+        if (User.IsInRole("Employee"))
+        {
+            var myId = GetLinkedEmployeeId();
+            if (myId is null) return BadRequest(new { message = "No employee record linked to your account." });
+            request.EmployeeId = myId.Value;
+        }
+
         request.Status = "Pending";
         request.CreatedAt = DateTime.UtcNow;
         _db.LeaveRequests.Add(request);
@@ -62,6 +85,12 @@ public class LeaveRequestsController : ControllerBase
         _db.LeaveRequests.Remove(request);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    private int? GetLinkedEmployeeId()
+    {
+        var claim = User.FindFirst("employeeId")?.Value;
+        return int.TryParse(claim, out var id) && id > 0 ? id : null;
     }
 }
 

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using EmployeeApi.Data;
 using EmployeeApi.Models;
 
@@ -16,10 +17,23 @@ public class EmployeesController : ControllerBase
     public EmployeesController(AppDbContext db) => _db = db;
 
     [HttpGet]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> GetAll() =>
         Ok(await _db.Employees.ToListAsync());
 
+    // Employee role: get own profile
+    [HttpGet("me")]
+    [Authorize(Roles = "Employee")]
+    public async Task<IActionResult> GetMe()
+    {
+        var empId = GetLinkedEmployeeId();
+        if (empId is null) return NotFound(new { message = "No employee record linked to your account." });
+        var employee = await _db.Employees.FindAsync(empId.Value);
+        return employee is null ? NotFound() : Ok(employee);
+    }
+
     [HttpGet("{id}")]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> GetById(int id)
     {
         var employee = await _db.Employees.FindAsync(id);
@@ -59,5 +73,11 @@ public class EmployeesController : ControllerBase
         _db.Employees.Remove(employee);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    private int? GetLinkedEmployeeId()
+    {
+        var claim = User.FindFirst("employeeId")?.Value;
+        return int.TryParse(claim, out var id) && id > 0 ? id : null;
     }
 }

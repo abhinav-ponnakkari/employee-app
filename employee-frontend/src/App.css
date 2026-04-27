@@ -58,9 +58,9 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #111827; c
   display: inline-block; padding: 0.15rem 0.55rem; border-radius: 99px;
   font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
 }
-.role-badge-admin  { background: #1e3a5f; color: #93c5fd; }
-.role-badge-hr     { background: #14532d; color: #86efac; }
-.role-badge-viewer { background: #374151; color: #9ca3af; }
+.role-badge-admin    { background: #1e3a5f; color: #93c5fd; }
+.role-badge-hr       { background: #14532d; color: #86efac; }
+.role-badge-employee { background: #3b1f6e; color: #c4b5fd; }
 
 /* ── Header user section ── */
 .header-user { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
@@ -489,6 +489,122 @@ textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.
 .note-delete:hover { background: #374151; color: #fca5a5; }
 
 /* ================================================================
+   EMPLOYEE PORTAL
+   ================================================================ */
+.portal-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.75rem; min-height: 40vh; color: #6b7280; font-size: 0.9rem;
+}
+.portal-layout {
+  display: flex; min-height: calc(100vh - 64px);
+}
+.portal-sidebar {
+  width: 220px; flex-shrink: 0;
+  background: #1f2937; border-right: 1px solid #374151;
+  display: flex; flex-direction: column;
+  padding: 1.5rem 0;
+  position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto;
+}
+.portal-avatar-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 1rem 1.5rem; border-bottom: 1px solid #374151; margin-bottom: 1rem;
+}
+.portal-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 0.65rem;
+}
+.portal-name    { font-size: 0.9rem; font-weight: 600; color: #f9fafb; text-align: center; }
+.portal-position { font-size: 0.75rem; color: #6b7280; text-align: center; margin-top: 0.2rem; }
+.portal-nav { display: flex; flex-direction: column; gap: 0.2rem; padding: 0 0.5rem; }
+.portal-nav-btn {
+  width: 100%; text-align: left; padding: 0.6rem 0.85rem;
+  background: none; border: none; color: #9ca3af; cursor: pointer;
+  border-radius: 7px; font-size: 0.85rem; transition: background 0.15s, color 0.15s;
+}
+.portal-nav-btn:hover { background: #374151; color: #f9fafb; }
+.portal-nav-btn.active { background: #1e3a5f; color: #93c5fd; font-weight: 600; }
+
+.portal-content { flex: 1; padding: 2rem; min-width: 0; }
+.portal-section { max-width: 900px; }
+.portal-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;
+}
+.portal-section-title { font-size: 1.25rem; font-weight: 700; color: #f9fafb; }
+.portal-subsection-title { font-size: 0.9rem; font-weight: 600; color: #9ca3af; margin: 1.5rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Profile grid */
+.profile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.profile-card {
+  background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1.1rem 1.25rem;
+}
+.profile-card-title { font-size: 0.78rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+.profile-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.35rem 0; border-bottom: 1px solid #374151; font-size: 0.85rem; }
+.profile-row:last-child { border-bottom: none; }
+.profile-row span:first-child { color: #6b7280; }
+.profile-row span:last-child  { color: #f9fafb; text-align: right; }
+
+/* Punch records */
+.punch-actions { display: flex; gap: 0.5rem; }
+.punch-today-card {
+  background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+  padding: 1rem 1.25rem; display: flex; gap: 1.5rem; align-items: center;
+  font-size: 0.85rem; color: #9ca3af; flex-wrap: wrap;
+}
+.punch-today-card > div:first-child { font-weight: 600; color: #f9fafb; }
+.punch-today-card strong { color: #f9fafb; }
+.punch-open { color: #fcd34d; }
+
+/* Circulars */
+.circulars-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem; }
+.circular-card {
+  background: #1f2937; border: 1px solid #374151; border-radius: 10px; padding: 1.1rem 1.25rem;
+}
+.circular-header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+.circular-title  { font-size: 1rem; font-weight: 600; color: #f9fafb; }
+.circular-meta   { display: flex; gap: 0.75rem; font-size: 0.78rem; color: #6b7280; flex-shrink: 0; }
+.circular-content { font-size: 0.875rem; color: #d1d5db; line-height: 1.6; white-space: pre-wrap; }
+
+/* Salary summary */
+.salary-summary-card {
+  background: #1f2937; border: 1px solid #374151; border-radius: 10px;
+  padding: 1.25rem 1.5rem; display: inline-flex; flex-direction: column; gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.salary-summary-label { font-size: 0.78rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+.salary-summary-value { font-size: 2rem; font-weight: 700; color: #86efac; }
+
+/* ── Salary Slip ── */
+.salary-slip-modal { max-width: 560px; padding: 0; background: #fff; color: #111; border-radius: 12px; overflow: hidden; }
+.salary-slip { padding: 2rem; }
+.slip-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 2px solid #2563eb; padding-bottom: 1rem; }
+.slip-logo { display: flex; align-items: center; gap: 0.5rem; }
+.slip-company { font-size: 1.1rem; font-weight: 700; color: #1e3a5f; }
+.slip-title-block { text-align: right; }
+.slip-title { font-size: 1.1rem; font-weight: 700; color: #111; }
+.slip-period { font-size: 0.85rem; color: #666; }
+.slip-employee-info { margin-bottom: 1.25rem; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+.slip-section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; background: #f3f4f6; padding: 0.4rem 0.75rem; margin-bottom: 0; border-top: 1px solid #e5e7eb; }
+.slip-earnings { border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; margin-bottom: 1rem; }
+.slip-row { display: flex; justify-content: space-between; padding: 0.5rem 0.75rem; font-size: 0.85rem; border-bottom: 1px solid #f3f4f6; color: #374151; }
+.slip-row:last-child { border-bottom: none; }
+.slip-row span:last-child { font-weight: 500; }
+.slip-total { background: #f0fdf4; font-weight: 700; color: #15803d; }
+.slip-footer { margin-top: 1.5rem; border-top: 1px solid #e5e7eb; padding-top: 0.75rem; font-size: 0.78rem; color: #6b7280; display: flex; justify-content: space-between; align-items: flex-end; }
+
+.salary-slip-modal .modal-actions { padding: 1rem 2rem 1.5rem; background: #f9fafb; border-top: 1px solid #e5e7eb; }
+.salary-slip-modal .modal-actions button { color: #374151 !important; }
+.salary-slip-modal .modal-actions .btn-primary { background: #2563eb !important; color: #fff !important; }
+
+@media print {
+  body * { visibility: hidden; }
+  .salary-slip, .salary-slip * { visibility: visible; }
+  .salary-slip { position: fixed; top: 0; left: 0; width: 100%; padding: 2rem; background: #fff; color: #111; }
+  .no-print { display: none !important; }
+}
+
+/* ================================================================
    TABLET  ≤ 1024px
    ================================================================ */
 @media (max-width: 1024px) {
@@ -556,6 +672,16 @@ textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.
 
   /* Login card full-width on mobile */
   .login-card { padding: 2rem 1.25rem; }
+
+  /* Employee portal mobile */
+  .portal-layout { flex-direction: column; }
+  .portal-sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; padding: 1rem; gap: 0.5rem; }
+  .portal-avatar-wrap { flex-direction: row; border-bottom: none; padding: 0; gap: 0.75rem; flex: 1; }
+  .portal-avatar { width: 40px; height: 40px; font-size: 0.9rem; margin: 0; }
+  .portal-nav { flex-direction: row; flex-wrap: wrap; padding: 0; width: 100%; gap: 0.25rem; }
+  .portal-nav-btn { width: auto; padding: 0.4rem 0.65rem; font-size: 0.78rem; }
+  .portal-content { padding: 1rem; }
+  .profile-grid { grid-template-columns: 1fr; }
 }
 
 /* ================================================================

@@ -13,4 +13,6 @@ public class AppDbContext : DbContext
     public DbSet<SalaryHistory> SalaryHistory => Set<SalaryHistory>();
     public DbSet<EmployeeNote> EmployeeNotes => Set<EmployeeNote>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<PunchRecord> PunchRecords => Set<PunchRecord>();
+    public DbSet<Circular> Circulars => Set<Circular>();
 }

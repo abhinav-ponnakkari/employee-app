@@ -86,13 +86,39 @@ using (var scope = app.Services.CreateScope())
 
     if (!db.Users.Any())
     {
+        // Seed demo employee records
+        int? emp1Id = null, emp2Id = null, emp3Id = null;
+        if (!db.Employees.Any())
+        {
+            var demoEmps = new[]
+            {
+                new Employee { FirstName = "Alice", LastName = "Johnson", Email = "alice@company.com", Department = "Engineering", Position = "Software Engineer",  Salary = 85000, HireDate = new DateOnly(2022, 3, 15), Status = "Active" },
+                new Employee { FirstName = "Bob",   LastName = "Smith",   Email = "bob@company.com",   Department = "Marketing",   Position = "Marketing Manager",  Salary = 75000, HireDate = new DateOnly(2021, 6, 1),  Status = "Active" },
+                new Employee { FirstName = "Carol", LastName = "White",   Email = "carol@company.com", Department = "Finance",     Position = "Financial Analyst",  Salary = 70000, HireDate = new DateOnly(2023, 1, 10), Status = "Active" },
+            };
+            db.Employees.AddRange(demoEmps);
+            db.SaveChanges();
+            emp1Id = demoEmps[0].Id;
+            emp2Id = demoEmps[1].Id;
+            emp3Id = demoEmps[2].Id;
+        }
+        else
+        {
+            var ids = db.Employees.Take(3).Select(e => e.Id).ToList();
+            if (ids.Count > 0) emp1Id = ids[0];
+            if (ids.Count > 1) emp2Id = ids[1];
+            if (ids.Count > 2) emp3Id = ids[2];
+        }
+
         db.Users.AddRange(
-            new User { Username = "admin",  PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),  Role = "Admin",  DisplayName = "Administrator" },
-            new User { Username = "hr",     PasswordHash = BCrypt.Net.BCrypt.HashPassword("hr123"),     Role = "HR",     DisplayName = "HR Manager" },
-            new User { Username = "viewer", PasswordHash = BCrypt.Net.BCrypt.HashPassword("viewer123"), Role = "Viewer", DisplayName = "Staff Viewer" }
+            new User { Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Role = "Admin",    DisplayName = "Administrator" },
+            new User { Username = "hr",    PasswordHash = BCrypt.Net.BCrypt.HashPassword("hr123"),    Role = "HR",       DisplayName = "HR Manager" },
+            new User { Username = "alice", PasswordHash = BCrypt.Net.BCrypt.HashPassword("alice123"), Role = "Employee", DisplayName = "Alice Johnson", EmployeeId = emp1Id },
+            new User { Username = "bob",   PasswordHash = BCrypt.Net.BCrypt.HashPassword("bob123"),   Role = "Employee", DisplayName = "Bob Smith",     EmployeeId = emp2Id },
+            new User { Username = "carol", PasswordHash = BCrypt.Net.BCrypt.HashPassword("carol123"), Role = "Employee", DisplayName = "Carol White",   EmployeeId = emp3Id }
         );
         db.SaveChanges();
-        Console.WriteLine("Default users seeded.");
+        Console.WriteLine("Default users and demo employees seeded.");
     }
 }
 

@@ -11,9 +11,11 @@ function Spinner() {
 }
 
 const DEMO_CREDENTIALS = [
-  { username: 'admin',  password: 'admin123',  role: 'Admin'  },
-  { username: 'hr',     password: 'hr123',     role: 'HR'     },
-  { username: 'viewer', password: 'viewer123', role: 'Viewer' },
+  { username: 'admin', password: 'admin123', role: 'Admin'    },
+  { username: 'hr',    password: 'hr123',    role: 'HR'       },
+  { username: 'alice', password: 'alice123', role: 'Employee' },
+  { username: 'bob',   password: 'bob123',   role: 'Employee' },
+  { username: 'carol', password: 'carol123', role: 'Employee' },
 ];
 
 export default function LoginPage() {

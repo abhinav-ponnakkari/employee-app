@@ -5,12 +5,19 @@ import { login as loginApi } from '../api/authApi';
 const ROLE_PERMISSIONS = {
   HR: [
     'addEmployee', 'editEmployee',
-    'viewSalary', 'addSalaryHistory',
-    'createLeave', 'approveLeave',
+    'viewSalary', 'addSalaryHistory', 'deleteSalaryHistory',
+    'createLeave', 'approveLeave', 'deleteLeave',
     'addNote', 'deleteNote',
     'exportCSV',
+    'manageCirculars',
   ],
-  Viewer: ['exportCSV'],
+  Employee: [
+    'viewOwnProfile',
+    'createLeave',
+    'viewOwnPunch', 'punchInOut',
+    'viewCirculars',
+    'viewOwnSalary', 'printSalarySlip',
+  ],
 };
 
 const AuthContext = createContext(null);

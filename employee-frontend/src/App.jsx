@@ -7,6 +7,8 @@ import EmployeeDetail from './components/EmployeeDetail';
 import SearchFilter from './components/SearchFilter';
 import LeaveView from './components/LeaveView';
 import LoginPage from './components/LoginPage';
+import EmployeePortal from './components/EmployeePortal';
+import CircularsView from './components/CircularsView';
 import { useAuth } from './context/AuthContext';
 import { avatarColor, exportEmployeesToCSV } from './utils';
 import './App.css';
@@ -35,7 +37,43 @@ export default function App() {
 
   if (!isAuthenticated) return <LoginPage />;
 
+  // Employee role gets a self-service portal, not the admin/HR view
+  if (user.role === 'Employee') return <EmployeePortalLayout user={user} logout={logout} />;
+
   return <MainApp user={user} logout={logout} can={can} />;
+}
+
+function EmployeePortalLayout({ user, logout }) {
+  return (
+    <div className="app-layout">
+      <header className="app-header">
+        <div className="header-left">
+          <div className="header-brand">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <div>
+              <h1>HR Manager</h1>
+              <span className="header-subtitle">Employee Portal</span>
+            </div>
+          </div>
+        </div>
+        <div className="header-actions">
+          <div className="header-user">
+            <span className="role-badge role-badge-employee">Employee</span>
+            <span className="header-username">{user.displayName}</span>
+            <button className="btn-logout" onClick={logout}>Logout</button>
+          </div>
+        </div>
+      </header>
+      <main className="app-main" style={{ padding: 0 }}>
+        <EmployeePortal />
+      </main>
+    </div>
+  );
 }
 
 function MainApp({ user, logout, can }) {
@@ -163,6 +201,9 @@ function MainApp({ user, logout, can }) {
             <button className={`nav-tab ${activeView === 'leave' ? 'active' : ''}`} onClick={() => setActiveView('leave')}>
               Leave Requests
             </button>
+            <button className={`nav-tab ${activeView === 'circulars' ? 'active' : ''}`} onClick={() => setActiveView('circulars')}>
+              Circulars
+            </button>
           </nav>
         </div>
 
@@ -266,6 +307,7 @@ function MainApp({ user, logout, can }) {
         )}
 
         {activeView === 'leave' && <LeaveView employees={employees} />}
+        {activeView === 'circulars' && <CircularsView />}
       </main>
 
       {selected && activeView === 'employees' && (

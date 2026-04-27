@@ -37,6 +37,7 @@ public class AuthController : ControllerBase
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Role, user.Role),
             new Claim("displayName", user.DisplayName),
+            new Claim("employeeId", user.EmployeeId?.ToString() ?? ""),
         };
 
         var token = new JwtSecurityToken(
@@ -50,7 +51,14 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             token = new JwtSecurityTokenHandler().WriteToken(token),
-            user = new { id = user.Id, username = user.Username, role = user.Role, displayName = user.DisplayName }
+            user = new
+            {
+                id = user.Id,
+                username = user.Username,
+                role = user.Role,
+                displayName = user.DisplayName,
+                employeeId = user.EmployeeId,
+            }
         });
     }
 }

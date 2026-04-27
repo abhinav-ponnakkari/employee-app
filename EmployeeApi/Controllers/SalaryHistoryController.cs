@@ -8,20 +8,34 @@ namespace EmployeeApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,HR")]
+[Authorize]
 public class SalaryHistoryController : ControllerBase
 {
     private readonly AppDbContext _db;
     public SalaryHistoryController(AppDbContext db) => _db = db;
 
     [HttpGet("employee/{employeeId}")]
-    public async Task<IActionResult> GetByEmployee(int employeeId) =>
-        Ok(await _db.SalaryHistory
+    public async Task<IActionResult> GetByEmployee(int employeeId)
+    {
+        // Employee can only view their own salary history
+        if (User.IsInRole("Employee"))
+        {
+            var myId = GetLinkedEmployeeId();
+            if (myId != employeeId) return Forbid();
+        }
+        else if (!User.IsInRole("Admin") && !User.IsInRole("HR"))
+        {
+            return Forbid();
+        }
+
+        return Ok(await _db.SalaryHistory
             .Where(s => s.EmployeeId == employeeId)
             .OrderByDescending(s => s.EffectiveDate)
             .ToListAsync());
+    }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> Create([FromBody] SalaryHistoryCreateDto dto)
     {
         var employee = await _db.Employees.FindAsync(dto.EmployeeId);
@@ -53,6 +67,12 @@ public class SalaryHistoryController : ControllerBase
         _db.SalaryHistory.Remove(entry);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    private int? GetLinkedEmployeeId()
+    {
+        var claim = User.FindFirst("employeeId")?.Value;
+        return int.TryParse(claim, out var id) && id > 0 ? id : null;
     }
 }
 
