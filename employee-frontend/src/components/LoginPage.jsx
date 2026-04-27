@@ -10,10 +10,6 @@ function Spinner() {
   );
 }
 
-const DEMO_CREDENTIALS = [
-  { username: 'admin', password: 'admin123', role: 'Admin' },
-];
-
 export default function LoginPage() {
   const { login } = useAuth();
   const [username, setUsername] = useState('');
@@ -39,12 +35,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillDemo = (cred) => {
-    setUsername(cred.username);
-    setPassword(cred.password);
-    setError('');
   };
 
   return (
@@ -103,20 +93,6 @@ export default function LoginPage() {
             {loading ? <><Spinner /> Signing in…</> : 'Sign In'}
           </button>
         </form>
-
-        <div className="login-hint">
-          <div className="login-hint-title">Demo credentials</div>
-          <div className="login-hint-list">
-            {DEMO_CREDENTIALS.map(c => (
-              <button key={c.username} className="login-hint-row" onClick={() => fillDemo(c)} type="button">
-                <span className={`role-badge role-badge-${c.role.toLowerCase()}`}>{c.role}</span>
-                <code>{c.username}</code>
-                <span className="login-hint-sep">/</span>
-                <code>{c.password}</code>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
