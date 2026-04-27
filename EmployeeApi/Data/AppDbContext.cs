@@ -9,4 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<Department> Departments => Set<Department>();
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+    public DbSet<SalaryHistory> SalaryHistory => Set<SalaryHistory>();
+    public DbSet<EmployeeNote> EmployeeNotes => Set<EmployeeNote>();
 }

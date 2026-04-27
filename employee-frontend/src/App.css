@@ -180,9 +180,15 @@ td.actions { white-space: nowrap; }
 
 /* ── Status badges ── */
 .badge { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 99px; font-size: 0.73rem; font-weight: 600; white-space: nowrap; }
-.badge-active   { background: #14532d; color: #86efac; }
-.badge-inactive { background: #374151; color: #9ca3af; }
-.badge-on-leave { background: #713f12; color: #fde68a; }
+.badge-active      { background: #14532d; color: #86efac; }
+.badge-inactive    { background: #374151; color: #9ca3af; }
+.badge-on-leave    { background: #713f12; color: #fde68a; }
+.badge-rejected    { background: #450a0a; color: #fca5a5; }
+.badge-leave-type  { background: #1e3a5f; color: #93c5fd; }
+.badge-note-general     { background: #1e3a5f; color: #93c5fd; }
+.badge-note-hr          { background: #3b0764; color: #d8b4fe; }
+.badge-note-performance { background: #14532d; color: #86efac; }
+.badge-note-warning     { background: #713f12; color: #fde68a; }
 
 /* ── Buttons ── */
 .btn-primary { background: #2563eb; color: #fff; border: none; padding: 0.5rem 1.1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; white-space: nowrap; }
@@ -196,6 +202,14 @@ td.actions { white-space: nowrap; }
 
 .btn-delete { background: #dc2626; color: #fff; border: none; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
 .btn-delete:hover { background: #b91c1c; }
+
+.btn-approve { background: #15803d; color: #fff; border: none; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+.btn-approve:hover { background: #166534; }
+
+.btn-reject-leave { background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; padding: 0.3rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+.btn-reject-leave:hover { background: #991b1b; }
+
+.btn-sm { padding: 0.3rem 0.75rem !important; font-size: 0.8rem !important; }
 
 /* ── Pagination ── */
 .pagination {
@@ -299,6 +313,105 @@ select option { background: #374151; color: #f9fafb; }
 .side-panel-actions .btn-edit,
 .side-panel-actions .btn-delete { flex: 1; padding: 0.6rem; text-align: center; font-size: 0.875rem; border-radius: 6px; }
 
+/* ── Header nav ── */
+.header-left { display: flex; align-items: center; gap: 1.5rem; flex: 1; min-width: 0; }
+.header-nav { display: flex; align-items: center; gap: 0.25rem; }
+.header-actions { display: flex; align-items: center; gap: 0.65rem; flex-shrink: 0; }
+
+.nav-tab {
+  background: none; border: none; cursor: pointer;
+  padding: 0.45rem 0.9rem; border-radius: 6px;
+  font-size: 0.875rem; font-weight: 500; color: #9ca3af;
+  white-space: nowrap;
+}
+.nav-tab:hover { background: #374151; color: #f9fafb; }
+.nav-tab.active { background: #1e3a5f; color: #93c5fd; }
+
+/* ── Leave stats grid ── */
+.leave-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Textarea ── */
+textarea {
+  border: 1px solid #4b5563; border-radius: 5px;
+  padding: 0.5rem 0.65rem; font-size: 0.875rem;
+  outline: none; width: 100%; resize: vertical;
+  background: #374151; color: #f9fafb;
+  font-family: inherit;
+}
+textarea::placeholder { color: #6b7280; }
+textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.25); }
+
+/* ── Side panel — profile mini header ── */
+.detail-profile-mini {
+  text-align: center;
+  padding: 0 1.5rem 1rem;
+  border-bottom: 1px solid #374151;
+}
+.detail-profile-mini .detail-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  font-size: 1.1rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 0.65rem; object-fit: cover;
+}
+
+/* ── Side panel — tabs ── */
+.detail-tabs {
+  display: flex; border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+.detail-tab {
+  flex: 1; background: none; border: none; cursor: pointer;
+  padding: 0.6rem 0.5rem; font-size: 0.8rem; font-weight: 500;
+  color: #9ca3af; border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.detail-tab:hover { color: #e5e7eb; }
+.detail-tab.active { color: #60a5fa; border-bottom-color: #3b82f6; }
+
+/* ── Salary history entries ── */
+.salary-entry {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 0.7rem 0; border-bottom: 1px solid #374151; gap: 0.75rem;
+}
+.salary-entry:last-child { border-bottom: none; }
+.salary-reason { font-size: 0.8rem; color: #9ca3af; margin-top: 0.2rem; }
+.salary-date   { font-size: 0.75rem; color: #6b7280; margin-top: 0.2rem; }
+.salary-change { font-size: 0.8rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.salary-change.positive { color: #86efac; }
+.salary-change.negative { color: #fca5a5; }
+
+/* ── Inline forms (salary / notes) ── */
+.inline-form {
+  background: #111827; border: 1px solid #374151; border-radius: 8px;
+  padding: 0.9rem 1rem; margin-bottom: 1rem;
+  display: flex; flex-direction: column; gap: 0.65rem;
+}
+.inline-form label { font-size: 0.8rem; font-weight: 500; color: #d1d5db; display: flex; flex-direction: column; gap: 0.3rem; }
+.inline-form-actions { display: flex; justify-content: flex-end; }
+
+/* ── Notes ── */
+.note-item {
+  background: #111827; border: 1px solid #374151; border-radius: 8px;
+  padding: 0.75rem 0.9rem; margin-bottom: 0.65rem;
+}
+.note-header {
+  display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.45rem; flex-wrap: wrap;
+}
+.note-content { font-size: 0.85rem; color: #e5e7eb; line-height: 1.5; margin-bottom: 0.35rem; white-space: pre-wrap; }
+.note-meta    { font-size: 0.75rem; color: #6b7280; }
+.note-delete  {
+  background: none; border: none; cursor: pointer; color: #6b7280;
+  margin-left: auto; font-size: 0.85rem; padding: 0.15rem 0.3rem;
+  border-radius: 3px; line-height: 1;
+}
+.note-delete:hover { background: #374151; color: #fca5a5; }
+
 /* ================================================================
    TABLET  ≤ 1024px
    ================================================================ */
@@ -306,6 +419,7 @@ select option { background: #374151; color: #f9fafb; }
   .app-main { padding: 1.25rem 1.5rem; }
   .dashboard { grid-template-columns: repeat(3, 1fr); }
   .stat-card-wide { grid-column: span 2; }
+  .leave-stats { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* ================================================================
@@ -353,6 +467,14 @@ select option { background: #374151; color: #f9fafb; }
   .modal-actions button { width: 100%; padding: 0.7rem; text-align: center; justify-content: center; }
 
   .side-panel { width: 100%; }
+
+  /* Header nav on mobile */
+  .header-left { gap: 0.75rem; }
+  .nav-tab { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+  .header-actions { gap: 0.4rem; }
+
+  /* Leave stats — 1 column on mobile */
+  .leave-stats { grid-template-columns: 1fr; gap: 0.75rem; }
 }
 
 /* ================================================================
