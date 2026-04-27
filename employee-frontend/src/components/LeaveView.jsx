@@ -1,0 +1,297 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { getLeaveRequests, createLeaveRequest, updateLeaveStatus, deleteLeaveRequest } from '../api/leaveApi';
+import { avatarColor, calcDays } from '../utils';
+
+const LEAVE_TYPES = ['Annual', 'Sick', 'Maternity', 'Paternity', 'Personal', 'Other'];
+const emptyForm = { employeeId: '', leaveType: 'Annual', startDate: '', endDate: '', reason: '' };
+
+function LeaveTypeBadge({ type }) {
+  return <span className="badge badge-leave-type">{type}</span>;
+}
+
+function LeaveStatusBadge({ status }) {
+  const cls = status === 'Approved' ? 'badge-active'
+    : status === 'Rejected' ? 'badge-rejected'
+    : 'badge-on-leave';
+  return <span className={`badge ${cls}`}>{status}</span>;
+}
+
+function Avatar({ emp }) {
+  const initials = `${emp.firstName?.[0] ?? ''}${emp.lastName?.[0] ?? ''}`.toUpperCase();
+  const color = avatarColor(emp.firstName + emp.lastName);
+  return <div className={`avatar avatar-${color}`}>{initials}</div>;
+}
+
+export default function LeaveView({ employees }) {
+  const [requests, setRequests] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterEmployee, setFilterEmployee] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectNote, setRejectNote] = useState('');
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      const res = await getLeaveRequests();
+      setRequests(res.data);
+    } catch {
+      setError('Failed to load leave requests.');
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const filtered = useMemo(() => {
+    let r = requests;
+    if (filterStatus) r = r.filter(x => x.status === filterStatus);
+    if (filterEmployee) r = r.filter(x => x.employeeId === parseInt(filterEmployee));
+    return r;
+  }, [requests, filterStatus, filterEmployee]);
+
+  const pending = requests.filter(r => r.status === 'Pending').length;
+  const now = new Date();
+  const approvedThisMonth = requests.filter(r => {
+    if (r.status !== 'Approved') return false;
+    const d = new Date(r.createdAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+
+  const getEmployee = (id) => employees.find(e => e.id === id);
+  const setF = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await createLeaveRequest({ ...form, employeeId: parseInt(form.employeeId) });
+      setShowForm(false);
+      setForm(emptyForm);
+      load();
+    } catch { setError('Failed to submit request.'); }
+  };
+
+  const handleApprove = async (id) => {
+    try {
+      await updateLeaveStatus(id, { status: 'Approved', reviewNote: null });
+      load();
+    } catch { setError('Failed to approve request.'); }
+  };
+
+  const handleReject = async () => {
+    try {
+      await updateLeaveStatus(rejectTarget, { status: 'Rejected', reviewNote: rejectNote || null });
+      setRejectTarget(null);
+      setRejectNote('');
+      load();
+    } catch { setError('Failed to reject request.'); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this leave request?')) return;
+    try { await deleteLeaveRequest(id); load(); }
+    catch { setError('Failed to delete request.'); }
+  };
+
+  return (
+    <div>
+      {error && (
+        <div className="error-banner">
+          {error}<button onClick={() => setError('')}>&#x2715;</button>
+        </div>
+      )}
+
+      {/* Stats row */}
+      <div className="leave-stats">
+        <div className="stat-card">
+          <div className="stat-icon orange">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{pending}</div>
+            <div className="stat-label">Pending</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{approvedThisMonth}</div>
+            <div className="stat-label">Approved This Month</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{requests.length}</div>
+            <div className="stat-label">Total Requests</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content panel */}
+      <div className="content-panel">
+        {/* Filter bar */}
+        <div className="search-filter">
+          <div className="search-filter-controls">
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+              <option value="">All Status</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <select value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
+              <option value="">All Employees</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</option>
+              ))}
+            </select>
+            {(filterStatus || filterEmployee) && (
+              <button className="btn-clear" onClick={() => { setFilterStatus(''); setFilterEmployee(''); }}>
+                Clear filters
+              </button>
+            )}
+          </div>
+          <div className="filter-result-count">
+            {filtered.length} request{filtered.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Type</th>
+                <th>Period</th>
+                <th>Days</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} className="empty">No leave requests found.</td></tr>
+              ) : filtered.map(req => {
+                const emp = getEmployee(req.employeeId);
+                const days = calcDays(req.startDate, req.endDate);
+                return (
+                  <tr key={req.id}>
+                    <td className="cell-name">
+                      {emp
+                        ? <><Avatar emp={emp} /><div><div className="cell-name-text">{emp.firstName} {emp.lastName}</div><div className="cell-name-sub">{emp.department}</div></div></>
+                        : <span className="muted">Employee #{req.employeeId}</span>
+                      }
+                    </td>
+                    <td><LeaveTypeBadge type={req.leaveType} /></td>
+                    <td>
+                      <div className="cell-name-text">{new Date(req.startDate).toLocaleDateString()}</div>
+                      <div className="cell-name-sub">&rarr; {new Date(req.endDate).toLocaleDateString()}</div>
+                    </td>
+                    <td>{days}d</td>
+                    <td><span className="muted" title={req.reason}>{req.reason ? req.reason.slice(0, 30) + (req.reason.length > 30 ? '…' : '') : '—'}</span></td>
+                    <td><LeaveStatusBadge status={req.status} /></td>
+                    <td>
+                      <div className="actions-inner">
+                        {req.status === 'Pending' && (
+                          <>
+                            <button className="btn-approve" onClick={() => handleApprove(req.id)}>Approve</button>
+                            <button className="btn-reject-leave" onClick={() => { setRejectTarget(req.id); setRejectNote(''); }}>Reject</button>
+                          </>
+                        )}
+                        <button className="btn-delete" onClick={() => handleDelete(req.id)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* New Request Modal */}
+      {showForm && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h2>New Leave Request</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="form-grid">
+                <label className="form-full">Employee
+                  <select value={form.employeeId} onChange={e => setF('employeeId', e.target.value)} required>
+                    <option value="">Select employee...</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Leave Type
+                  <select value={form.leaveType} onChange={e => setF('leaveType', e.target.value)}>
+                    {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </label>
+                <label></label>
+                <label>Start Date
+                  <input type="date" value={form.startDate} onChange={e => setF('startDate', e.target.value)} required />
+                </label>
+                <label>End Date
+                  <input type="date" value={form.endDate} onChange={e => setF('endDate', e.target.value)} required min={form.startDate} />
+                </label>
+                {form.startDate && form.endDate && (
+                  <div className="form-full" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                    Duration: <strong style={{ color: '#60a5fa' }}>{calcDays(form.startDate, form.endDate)} day(s)</strong>
+                  </div>
+                )}
+                <label className="form-full">Reason (optional)
+                  <textarea value={form.reason} onChange={e => setF('reason', e.target.value)} rows={3} placeholder="Briefly describe the reason..." />
+                </label>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Submit Request</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {rejectTarget !== null && (
+        <div className="modal-backdrop">
+          <div className="modal" style={{ maxWidth: 420 }}>
+            <h2>Reject Leave Request</h2>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+              Rejection reason (optional)
+              <textarea
+                value={rejectNote}
+                onChange={e => setRejectNote(e.target.value)}
+                rows={3}
+                placeholder="Explain why the request is being rejected..."
+              />
+            </label>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setRejectTarget(null)}>Cancel</button>
+              <button className="btn-delete" onClick={handleReject}>Confirm Reject</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* This button is rendered in App.jsx header — exported so App can pass the setter */
+LeaveView.AddButton = function AddButton({ onClick }) {
+  return <button className="btn-primary" onClick={onClick}>+ New Request</button>;
+};
