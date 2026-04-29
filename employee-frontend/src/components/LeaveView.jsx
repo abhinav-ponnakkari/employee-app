@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getLeaveRequests, createLeaveRequest, updateLeaveStatus, deleteLeaveRequest } from '../api/leaveApi';
+import { getLeavePolicies } from '../api/leavePoliciesApi';
+import { checkHolidays } from '../api/holidaysApi';
+import { getLeaveBalance } from '../api/leavePoliciesApi';
 import { avatarColor, calcDays } from '../utils';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,6 +47,32 @@ export default function LeaveView({ employees }) {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [policies, setPolicies] = useState([]);
+  const [balanceEmpId, setBalanceEmpId] = useState('');
+  const [balance, setBalance] = useState([]);
+  const [holidayWarnings, setHolidayWarnings] = useState([]);
+
+  useEffect(() => {
+    getLeavePolicies().then(r => setPolicies(r.data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (balanceEmpId) {
+      getLeaveBalance(balanceEmpId).then(r => setBalance(r.data)).catch(() => setBalance([]));
+    } else {
+      setBalance([]);
+    }
+  }, [balanceEmpId]);
+
+  useEffect(() => {
+    if (form.startDate && form.endDate) {
+      checkHolidays(form.startDate, form.endDate)
+        .then(r => setHolidayWarnings(r.data))
+        .catch(() => setHolidayWarnings([]));
+    } else {
+      setHolidayWarnings([]);
+    }
+  }, [form.startDate, form.endDate]);
 
   const load = useCallback(async () => {
     try {
@@ -167,14 +196,14 @@ export default function LeaveView({ employees }) {
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
             </select>
-            <select value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
+            <select value={filterEmployee} onChange={e => { setFilterEmployee(e.target.value); setBalanceEmpId(e.target.value); }}>
               <option value="">All Employees</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName}</option>
               ))}
             </select>
             {(filterStatus || filterEmployee) && (
-              <button className="btn-clear" onClick={() => { setFilterStatus(''); setFilterEmployee(''); }}>
+              <button className="btn-clear" onClick={() => { setFilterStatus(''); setFilterEmployee(''); setBalanceEmpId(''); }}>
                 Clear filters
               </button>
             )}
@@ -186,6 +215,25 @@ export default function LeaveView({ employees }) {
             )}
           </div>
         </div>
+
+        {/* Leave Balance Cards — shown when an employee is selected */}
+        {balance.length > 0 && (
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', margin: '0.75rem 0' }}>
+            {balance.map(b => {
+              const pct = b.entitlementDays > 0 ? (b.remainingDays / b.entitlementDays) * 100 : 0;
+              const color = pct > 50 ? '#10b981' : pct > 20 ? '#f59e0b' : '#ef4444';
+              return (
+                <div key={b.leaveType} style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, padding: '10px 16px', minWidth: 130 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: 4 }}>{b.leaveType}</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color }}>{b.remainingDays}<span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>/{b.entitlementDays} days</span></div>
+                  <div style={{ height: 4, background: '#1e293b', borderRadius: 2, marginTop: 6 }}>
+                    <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: color, borderRadius: 2, transition: 'width 0.3s' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Table */}
         <div className="table-wrap">
@@ -275,6 +323,11 @@ export default function LeaveView({ employees }) {
                 {form.startDate && form.endDate && (
                   <div className="form-full" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                     Duration: <strong style={{ color: '#60a5fa' }}>{calcDays(form.startDate, form.endDate)} day(s)</strong>
+                  </div>
+                )}
+                {holidayWarnings.length > 0 && (
+                  <div className="form-full" style={{ background: '#f59e0b18', border: '1px solid #f59e0b44', borderRadius: 8, padding: '8px 12px', fontSize: '0.82rem', color: '#f59e0b' }}>
+                    ⚠ Your leave dates include {holidayWarnings.length} public holiday(s): {holidayWarnings.map(d => new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })).join(', ')}
                   </div>
                 )}
                 <label className="form-full">Reason (optional)

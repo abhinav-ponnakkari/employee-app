@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getPayrolls, createPayroll, addPayrollItem, deletePayrollItem, finalizePayroll, deletePayroll } from '../api/payrollApi';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axiosInstance';
 
 function Spinner() {
   return (
@@ -249,6 +250,7 @@ export default function PayrollView({ employees }) {
   const [showGenerate, setShowGenerate] = useState(false);
   const [genForm, setGenForm] = useState({ employeeId: '', notes: '' });
   const [generating, setGenerating] = useState(false);
+  const [bulkGenerating, setBulkGenerating] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -259,6 +261,18 @@ export default function PayrollView({ employees }) {
   }, [month, year]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleBulkGenerate = async () => {
+    if (!window.confirm(`Generate payroll for ALL active employees for ${MONTH_NAMES[month - 1]} ${year}? Already-generated employees will be skipped.`)) return;
+    setBulkGenerating(true);
+    try {
+      const res = await api.post('/payroll/bulk', { month, year, notes: null });
+      alert(`Done! Created: ${res.data.created}, Skipped (already exists): ${res.data.skipped}`);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Bulk generation failed.');
+    } finally { setBulkGenerating(false); }
+  };
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -302,10 +316,17 @@ export default function PayrollView({ employees }) {
             </select>
             <span className="filter-result-count">{payrolls.length} record{payrolls.length !== 1 ? 's' : ''}</span>
           </div>
-          {can('editPayroll') && ungeneratedEmployees.length > 0 && (
-            <button className="btn-primary" onClick={() => { setShowGenerate(true); setGenForm({ employeeId: '', notes: '' }); }}>
-              + Generate Payroll
-            </button>
+          {can('editPayroll') && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn-secondary" onClick={handleBulkGenerate} disabled={bulkGenerating}>
+                {bulkGenerating ? 'Generating…' : '⚡ Bulk Generate All'}
+              </button>
+              {ungeneratedEmployees.length > 0 && (
+                <button className="btn-primary" onClick={() => { setShowGenerate(true); setGenForm({ employeeId: '', notes: '' }); }}>
+                  + Generate Payroll
+                </button>
+              )}
+            </div>
           )}
         </div>
 

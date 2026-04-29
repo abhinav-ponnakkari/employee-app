@@ -18,4 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<Payroll> Payrolls => Set<Payroll>();
     public DbSet<PayrollItem> PayrollItems => Set<PayrollItem>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<LeavePolicy> LeavePolicies => Set<LeavePolicy>();
+    public DbSet<PublicHoliday> PublicHolidays => Set<PublicHoliday>();
+    public DbSet<ReviewCycle> ReviewCycles => Set<ReviewCycle>();
+    public DbSet<PerformanceReview> PerformanceReviews => Set<PerformanceReview>();
 }

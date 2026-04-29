@@ -196,6 +196,48 @@ public class PayrollController : ControllerBase
         return NoContent();
     }
 
+    // POST /api/payroll/bulk — generate payroll for all active employees for a month
+    [HttpPost("bulk")]
+    [Authorize(Roles = "Admin,HR")]
+    public async Task<IActionResult> BulkGenerate([FromBody] BulkPayrollDto dto)
+    {
+        var username = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+
+        var employees = await _db.Employees.AsNoTracking()
+            .Where(e => e.Status == null || e.Status == "Active")
+            .ToListAsync();
+
+        var existing = await _db.Payrolls.AsNoTracking()
+            .Where(p => p.Month == dto.Month && p.Year == dto.Year)
+            .Select(p => p.EmployeeId)
+            .ToListAsync();
+
+        var toCreate = employees.Where(e => !existing.Contains(e.Id)).ToList();
+        if (toCreate.Count == 0)
+            return BadRequest(new { message = "Payroll already generated for all active employees this month." });
+
+        var payrolls = toCreate.Select(e => new Payroll
+        {
+            EmployeeId = e.Id,
+            Month = dto.Month,
+            Year = dto.Year,
+            BaseSalary = e.Salary,
+            NetPay = e.Salary,
+            Notes = dto.Notes,
+            Status = "Draft",
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = username,
+        }).ToList();
+
+        _db.Payrolls.AddRange(payrolls);
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync("BulkCreated", "Payroll", null, username,
+            $"{payrolls.Count} payrolls for {dto.Month}/{dto.Year}");
+
+        return Ok(new { created = payrolls.Count, skipped = existing.Count });
+    }
+
     private void RecalcNetPay(Payroll p)
     {
         p.NetPay = p.BaseSalary
@@ -206,3 +248,4 @@ public class PayrollController : ControllerBase
 
 public record CreatePayrollDto(int EmployeeId, int Month, int Year, decimal BaseSalary, string? Notes);
 public record AddPayrollItemDto(string Type, string Label, decimal Amount);
+public record BulkPayrollDto(int Month, int Year, string? Notes);

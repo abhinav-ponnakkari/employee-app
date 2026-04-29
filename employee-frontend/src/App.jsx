@@ -12,13 +12,16 @@ import './App.css';
 
 import ChatBot from './components/ChatBot';
 
-const Dashboard     = lazy(() => import('./components/Dashboard'));
+const Dashboard      = lazy(() => import('./components/Dashboard'));
 const EmployeePortal = lazy(() => import('./components/EmployeePortal'));
-const LeaveView     = lazy(() => import('./components/LeaveView'));
-const CircularsView = lazy(() => import('./components/CircularsView'));
-const UsersView     = lazy(() => import('./components/UsersView'));
-const PayrollView   = lazy(() => import('./components/PayrollView'));
-const AuditView     = lazy(() => import('./components/AuditView'));
+const LeaveView      = lazy(() => import('./components/LeaveView'));
+const CircularsView  = lazy(() => import('./components/CircularsView'));
+const UsersView      = lazy(() => import('./components/UsersView'));
+const PayrollView    = lazy(() => import('./components/PayrollView'));
+const AuditView      = lazy(() => import('./components/AuditView'));
+const AttendanceView = lazy(() => import('./components/AttendanceView'));
+const PerformanceView = lazy(() => import('./components/PerformanceView'));
+const HolidayView    = lazy(() => import('./components/HolidayView'));
 
 function ViewLoader() {
   return <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>Loading…</div>;
@@ -243,6 +246,19 @@ function MainApp({ user, logout, can }) {
                 Payroll
               </button>
             )}
+            {(user.role === 'Admin' || user.role === 'HR') && (
+              <button className={`nav-tab ${activeView === 'attendance' ? 'active' : ''}`} onClick={() => setActiveView('attendance')}>
+                Attendance
+              </button>
+            )}
+            {(user.role === 'Admin' || user.role === 'HR') && (
+              <button className={`nav-tab ${activeView === 'performance' ? 'active' : ''}`} onClick={() => setActiveView('performance')}>
+                Performance
+              </button>
+            )}
+            <button className={`nav-tab ${activeView === 'holidays' ? 'active' : ''}`} onClick={() => setActiveView('holidays')}>
+              Holidays
+            </button>
             {user.role === 'Admin' && (
               <button className={`nav-tab ${activeView === 'users' ? 'active' : ''}`} onClick={() => setActiveView('users')}>
                 User Accounts
@@ -361,6 +377,9 @@ function MainApp({ user, logout, can }) {
           {activeView === 'leave' && <LeaveView employees={employees} />}
           {activeView === 'circulars' && <CircularsView />}
           {activeView === 'payroll' && <PayrollView employees={employees} />}
+          {activeView === 'attendance' && <AttendanceView />}
+          {activeView === 'performance' && <PerformanceView employees={employees} />}
+          {activeView === 'holidays' && <HolidayView />}
           {activeView === 'users' && <UsersView />}
           {activeView === 'audit' && <AuditView />}
         </Suspense>
