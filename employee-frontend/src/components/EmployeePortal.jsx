@@ -1,11 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getLeaveRequests, createLeaveRequest } from '../api/leaveApi';
 import { getPunchRecords, punchIn, punchOut } from '../api/punchApi';
 import { getCirculars } from '../api/circularsApi';
 import { getSalaryHistory } from '../api/salaryHistoryApi';
+import { getLeaveBalance } from '../api/leavePoliciesApi';
+import { getHolidays } from '../api/holidaysApi';
+import { getMyReviews } from '../api/performanceApi';
 import { avatarColor } from '../utils';
 import api from '../api/axiosInstance';
+
+const MoodPulse    = lazy(() => import('./MoodPulse'));
+const PollsView    = lazy(() => import('./PollsView'));
+const SkillsPanel  = lazy(() => import('./SkillsPanel'));
+const FeedbackView = lazy(() => import('./FeedbackView'));
+const OrgChart     = lazy(() => import('./OrgChart'));
+const DocumentCenter = lazy(() => import('./DocumentCenter'));
+const LeaveCalendar  = lazy(() => import('./LeaveCalendar'));
+
+function ViewLoader() {
+  return <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>Loading…</div>;
+}
 
 function Spinner() {
   return (
@@ -119,6 +134,9 @@ export default function EmployeePortal() {
   const [punches, setPunches] = useState([]);
   const [circulars, setCirculars] = useState([]);
   const [salaryHistory, setSalaryHistory] = useState([]);
+  const [leaveBalance, setLeaveBalance] = useState([]);
+  const [holidays, setHolidays] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -154,6 +172,12 @@ export default function EmployeePortal() {
     if (!user.employeeId) return;
     getSalaryHistory(user.employeeId).then(r => setSalaryHistory(r.data)).catch(() => {});
   }, [user.employeeId]);
+
+  useEffect(() => {
+    if (user.employeeId) getLeaveBalance(user.employeeId).then(r => setLeaveBalance(r.data)).catch(() => {});
+    getHolidays(new Date().getFullYear()).then(r => setHolidays(r.data)).catch(() => {});
+    getMyReviews().then(r => setMyReviews(r.data)).catch(() => {});
+  }, [user.employeeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (tab === 'leaves') loadLeaves();
@@ -216,6 +240,15 @@ export default function EmployeePortal() {
     { key: 'punch',     label: 'Punch Records' },
     { key: 'circulars', label: 'Circulars' },
     { key: 'salary',    label: 'Salary Slip' },
+    { key: 'holidays',  label: 'Holidays' },
+    { key: 'reviews',   label: 'My Reviews' },
+    { key: 'mood',      label: '😊 Mood Check-in' },
+    { key: 'polls',     label: '📊 Polls' },
+    { key: 'skills',    label: '⚡ My Skills' },
+    { key: 'feedback',  label: '💬 Feedback' },
+    { key: 'leavecal',  label: '📅 Leave Calendar' },
+    { key: 'orgchart',  label: '🏢 Org Chart' },
+    { key: 'docs',      label: '📁 Documents' },
   ];
 
   return (
@@ -461,6 +494,141 @@ export default function EmployeePortal() {
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {/* ── Leave Balance ── shown in leaves tab */}
+        {tab === 'leaves' && leaveBalance.length > 0 && (
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', padding: '0 1.5rem 1rem' }}>
+            {leaveBalance.map(b => {
+              const pct = b.entitlementDays > 0 ? (b.remainingDays / b.entitlementDays) * 100 : 0;
+              const color = pct > 50 ? '#10b981' : pct > 20 ? '#f59e0b' : '#ef4444';
+              return (
+                <div key={b.leaveType} style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, padding: '10px 16px', minWidth: 120 }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: 3 }}>{b.leaveType}</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 700, color }}>{b.remainingDays}<span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>/{b.entitlementDays}d</span></div>
+                  <div style={{ height: 3, background: '#1e293b', borderRadius: 2, marginTop: 5 }}>
+                    <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: color, borderRadius: 2 }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Holidays Tab ── */}
+        {tab === 'holidays' && (
+          <div className="portal-section">
+            <div className="portal-section-header">
+              <h2 className="portal-section-title">Public Holidays {new Date().getFullYear()}</h2>
+            </div>
+            {holidays.length === 0 ? (
+              <p className="muted">No holidays configured yet.</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Holiday</th><th>Date</th><th>Day</th><th>Type</th></tr></thead>
+                  <tbody>
+                    {holidays.map((h, i) => {
+                      const d = new Date(h.date + 'T00:00:00');
+                      const isPast = d < new Date();
+                      return (
+                        <tr key={i} style={{ opacity: isPast ? 0.55 : 1 }}>
+                          <td style={{ fontWeight: 500 }}>{h.name}</td>
+                          <td>{d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}</td>
+                          <td className="muted">{d.toLocaleDateString(undefined, { weekday: 'long' })}</td>
+                          <td>{h.isRecurring ? <span className="badge badge-active">Annual</span> : <span className="badge badge-inactive">One-time</span>}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── My Reviews Tab ── */}
+        {tab === 'reviews' && (
+          <div className="portal-section">
+            <div className="portal-section-header">
+              <h2 className="portal-section-title">My Performance Reviews</h2>
+            </div>
+            {myReviews.length === 0 ? (
+              <p className="muted">No performance reviews yet.</p>
+            ) : myReviews.map(r => (
+              <div key={r.id} style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, padding: '1rem 1.25rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontWeight: 600, color: '#f1f5f9' }}>{r.cycle?.title ?? 'Review'}</div>
+                  <span className={`badge badge-${r.status === 'Completed' ? 'active' : 'probation'}`}>{r.status}</span>
+                </div>
+                {r.overallRating && (
+                  <div style={{ marginBottom: 6 }}>
+                    {'★'.repeat(r.overallRating)}{'☆'.repeat(5 - r.overallRating)}
+                    <span style={{ fontSize: '0.8rem', color: '#64748b', marginLeft: 6 }}>{r.overallRating}/5</span>
+                  </div>
+                )}
+                {r.managerComments && <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '4px 0' }}><strong style={{ color: '#cbd5e1' }}>Manager:</strong> {r.managerComments}</p>}
+                {r.goals && <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '4px 0' }}><strong style={{ color: '#cbd5e1' }}>Goals:</strong> {r.goals}</p>}
+                {r.selfAssessment && <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '4px 0' }}><strong style={{ color: '#cbd5e1' }}>Self-Assessment:</strong> {r.selfAssessment}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+        {tab === 'mood' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <MoodPulse role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'polls' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <PollsView role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'skills' && (
+          <div className="portal-section">
+            <h3 className="portal-section-title">My Skills &amp; Certifications</h3>
+            <Suspense fallback={<ViewLoader />}>
+              <SkillsPanel role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'feedback' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <FeedbackView role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'leavecal' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <LeaveCalendar />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'orgchart' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <OrgChart />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'docs' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <DocumentCenter role="Employee" />
+            </Suspense>
           </div>
         )}
       </main>

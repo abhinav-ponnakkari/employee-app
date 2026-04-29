@@ -15,4 +15,5 @@ public class Employee
     public string? Gender { get; set; }
     public DateOnly? DateOfBirth { get; set; }
     public string? PhotoUrl { get; set; }
+    public int? ManagerId { get; set; }
 }
