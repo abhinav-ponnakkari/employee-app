@@ -138,6 +138,57 @@ public class EmployeesController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("org-chart")]
+    public async Task<IActionResult> OrgChart()
+    {
+        var employees = await _db.Employees
+            .Where(e => e.IsActive)
+            .Select(e => new { e.Id, e.Name, e.Position, e.Department, e.PhotoUrl, e.ManagerId })
+            .ToListAsync();
+        return Ok(employees);
+    }
+
+    [HttpGet("birthdays")]
+    [Authorize(Roles = "Admin,HR")]
+    public async Task<IActionResult> Birthdays([FromQuery] int days = 30)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var employees = await _db.Employees
+            .Where(e => e.IsActive && e.DateOfBirth != null)
+            .Select(e => new { e.Id, e.Name, e.Department, e.Position, e.PhotoUrl, e.DateOfBirth, e.HireDate })
+            .ToListAsync();
+
+        var upcoming = employees
+            .Select(e =>
+            {
+                var bd = e.DateOfBirth!.Value;
+                var thisYear = new DateOnly(today.Year, bd.Month, bd.Day);
+                if (thisYear < today) thisYear = new DateOnly(today.Year + 1, bd.Month, bd.Day);
+                var daysUntil = thisYear.DayNumber - today.DayNumber;
+
+                var hd = e.HireDate;
+                var yearsOfService = today.Year - hd.Year - (today < new DateOnly(today.Year, hd.Month, hd.Day) ? 1 : 0);
+                var annivThisYear = new DateOnly(today.Year, hd.Month, hd.Day);
+                if (annivThisYear < today) annivThisYear = new DateOnly(today.Year + 1, hd.Month, hd.Day);
+                var daysUntilAnniv = annivThisYear.DayNumber - today.DayNumber;
+
+                return new
+                {
+                    e.Id, e.Name, e.Department, e.Position, e.PhotoUrl,
+                    BirthdayDate = new DateOnly(today.Year, bd.Month, bd.Day),
+                    DaysUntilBirthday = daysUntil,
+                    AnniversaryDate = annivThisYear,
+                    DaysUntilAnniversary = daysUntilAnniv,
+                    YearsOfService = yearsOfService
+                };
+            })
+            .Where(e => e.DaysUntilBirthday <= days || e.DaysUntilAnniversary <= days)
+            .OrderBy(e => Math.Min(e.DaysUntilBirthday, e.DaysUntilAnniversary))
+            .ToList();
+
+        return Ok(upcoming);
+    }
+
     private int? GetLinkedEmployeeId()
     {
         var claim = User.FindFirst("employeeId")?.Value;

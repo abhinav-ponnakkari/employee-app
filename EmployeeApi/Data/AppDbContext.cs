@@ -22,4 +22,11 @@ public class AppDbContext : DbContext
     public DbSet<PublicHoliday> PublicHolidays => Set<PublicHoliday>();
     public DbSet<ReviewCycle> ReviewCycles => Set<ReviewCycle>();
     public DbSet<PerformanceReview> PerformanceReviews => Set<PerformanceReview>();
+    public DbSet<EmployeeOfMonth> EmployeeOfMonth => Set<EmployeeOfMonth>();
+    public DbSet<MoodCheckin> MoodCheckins => Set<MoodCheckin>();
+    public DbSet<Poll> Polls => Set<Poll>();
+    public DbSet<PollVote> PollVotes => Set<PollVote>();
+    public DbSet<EmployeeSkill> EmployeeSkills => Set<EmployeeSkill>();
+    public DbSet<AnonymousFeedback> AnonymousFeedbacks => Set<AnonymousFeedback>();
+    public DbSet<HrDocument> HrDocuments => Set<HrDocument>();
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getLeaveRequests, createLeaveRequest } from '../api/leaveApi';
 import { getPunchRecords, punchIn, punchOut } from '../api/punchApi';
@@ -9,6 +9,18 @@ import { getHolidays } from '../api/holidaysApi';
 import { getMyReviews } from '../api/performanceApi';
 import { avatarColor } from '../utils';
 import api from '../api/axiosInstance';
+
+const MoodPulse    = lazy(() => import('./MoodPulse'));
+const PollsView    = lazy(() => import('./PollsView'));
+const SkillsPanel  = lazy(() => import('./SkillsPanel'));
+const FeedbackView = lazy(() => import('./FeedbackView'));
+const OrgChart     = lazy(() => import('./OrgChart'));
+const DocumentCenter = lazy(() => import('./DocumentCenter'));
+const LeaveCalendar  = lazy(() => import('./LeaveCalendar'));
+
+function ViewLoader() {
+  return <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>Loading…</div>;
+}
 
 function Spinner() {
   return (
@@ -122,11 +134,11 @@ export default function EmployeePortal() {
   const [punches, setPunches] = useState([]);
   const [circulars, setCirculars] = useState([]);
   const [salaryHistory, setSalaryHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [leaveBalance, setLeaveBalance] = useState([]);
   const [holidays, setHolidays] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Leave form
   const [showLeaveForm, setShowLeaveForm] = useState(false);
@@ -165,7 +177,7 @@ export default function EmployeePortal() {
     if (user.employeeId) getLeaveBalance(user.employeeId).then(r => setLeaveBalance(r.data)).catch(() => {});
     getHolidays(new Date().getFullYear()).then(r => setHolidays(r.data)).catch(() => {});
     getMyReviews().then(r => setMyReviews(r.data)).catch(() => {});
-  }, [user.employeeId]);
+  }, [user.employeeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (tab === 'leaves') loadLeaves();
@@ -230,6 +242,13 @@ export default function EmployeePortal() {
     { key: 'salary',    label: 'Salary Slip' },
     { key: 'holidays',  label: 'Holidays' },
     { key: 'reviews',   label: 'My Reviews' },
+    { key: 'mood',      label: '😊 Mood Check-in' },
+    { key: 'polls',     label: '📊 Polls' },
+    { key: 'skills',    label: '⚡ My Skills' },
+    { key: 'feedback',  label: '💬 Feedback' },
+    { key: 'leavecal',  label: '📅 Leave Calendar' },
+    { key: 'orgchart',  label: '🏢 Org Chart' },
+    { key: 'docs',      label: '📁 Documents' },
   ];
 
   return (
@@ -554,6 +573,62 @@ export default function EmployeePortal() {
                 {r.selfAssessment && <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '4px 0' }}><strong style={{ color: '#cbd5e1' }}>Self-Assessment:</strong> {r.selfAssessment}</p>}
               </div>
             ))}
+          </div>
+        )}
+        {tab === 'mood' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <MoodPulse role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'polls' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <PollsView role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'skills' && (
+          <div className="portal-section">
+            <h3 className="portal-section-title">My Skills &amp; Certifications</h3>
+            <Suspense fallback={<ViewLoader />}>
+              <SkillsPanel role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'feedback' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <FeedbackView role="Employee" />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'leavecal' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <LeaveCalendar />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'orgchart' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <OrgChart />
+            </Suspense>
+          </div>
+        )}
+
+        {tab === 'docs' && (
+          <div className="portal-section">
+            <Suspense fallback={<ViewLoader />}>
+              <DocumentCenter role="Employee" />
+            </Suspense>
           </div>
         )}
       </main>

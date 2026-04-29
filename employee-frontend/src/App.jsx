@@ -22,6 +22,14 @@ const AuditView      = lazy(() => import('./components/AuditView'));
 const AttendanceView = lazy(() => import('./components/AttendanceView'));
 const PerformanceView = lazy(() => import('./components/PerformanceView'));
 const HolidayView    = lazy(() => import('./components/HolidayView'));
+const EmployeeOfMonthSpotlight = lazy(() => import('./components/EmployeeOfMonthSpotlight'));
+const MoodPulse      = lazy(() => import('./components/MoodPulse'));
+const PollsView      = lazy(() => import('./components/PollsView'));
+const LeaveCalendar  = lazy(() => import('./components/LeaveCalendar'));
+const FeedbackView   = lazy(() => import('./components/FeedbackView'));
+const OrgChart       = lazy(() => import('./components/OrgChart'));
+const DocumentCenter = lazy(() => import('./components/DocumentCenter'));
+const AiInsights     = lazy(() => import('./components/AiInsights'));
 
 function ViewLoader() {
   return <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>Loading…</div>;
@@ -51,7 +59,6 @@ export default function App() {
 
   if (!isAuthenticated) return <LoginPage />;
 
-  // Employee role gets a self-service portal, not the admin/HR view
   if (user.role === 'Employee') return <EmployeePortalLayout user={user} logout={logout} />;
 
   return <MainApp user={user} logout={logout} can={can} />;
@@ -269,6 +276,32 @@ function MainApp({ user, logout, can }) {
                 Audit Log
               </button>
             )}
+            <button className={`nav-tab ${activeView === 'eom' ? 'active' : ''}`} onClick={() => setActiveView('eom')}>
+              🏆 Star
+            </button>
+            <button className={`nav-tab ${activeView === 'mood' ? 'active' : ''}`} onClick={() => setActiveView('mood')}>
+              😊 Mood
+            </button>
+            <button className={`nav-tab ${activeView === 'polls' ? 'active' : ''}`} onClick={() => setActiveView('polls')}>
+              📊 Polls
+            </button>
+            <button className={`nav-tab ${activeView === 'leavecal' ? 'active' : ''}`} onClick={() => setActiveView('leavecal')}>
+              📅 Calendar
+            </button>
+            <button className={`nav-tab ${activeView === 'feedback' ? 'active' : ''}`} onClick={() => setActiveView('feedback')}>
+              💬 Feedback
+            </button>
+            <button className={`nav-tab ${activeView === 'orgchart' ? 'active' : ''}`} onClick={() => setActiveView('orgchart')}>
+              🏢 Org Chart
+            </button>
+            <button className={`nav-tab ${activeView === 'docs' ? 'active' : ''}`} onClick={() => setActiveView('docs')}>
+              📁 Docs
+            </button>
+            {(user.role === 'Admin' || user.role === 'HR') && (
+              <button className={`nav-tab ${activeView === 'insights' ? 'active' : ''}`} onClick={() => setActiveView('insights')}>
+                🤖 Insights
+              </button>
+            )}
           </nav>
         </div>
 
@@ -382,6 +415,49 @@ function MainApp({ user, logout, can }) {
           {activeView === 'holidays' && <HolidayView />}
           {activeView === 'users' && <UsersView />}
           {activeView === 'audit' && <AuditView />}
+          {activeView === 'eom' && (
+            <div className="content-panel">
+              <h2 style={{ color: '#FFD700', marginTop: 0 }}>🏆 Employee of the Month</h2>
+              <EmployeeOfMonthSpotlight role={user.role} />
+            </div>
+          )}
+          {activeView === 'mood' && (
+            <div className="content-panel">
+              <h2 style={{ color: '#4ecdc4', marginTop: 0 }}>😊 Team Mood Pulse</h2>
+              <MoodPulse role={user.role} />
+            </div>
+          )}
+          {activeView === 'polls' && (
+            <div className="content-panel">
+              <PollsView role={user.role} />
+            </div>
+          )}
+          {activeView === 'leavecal' && (
+            <div className="content-panel">
+              <LeaveCalendar />
+            </div>
+          )}
+          {activeView === 'feedback' && (
+            <div className="content-panel">
+              <h2 style={{ color: '#74b9ff', marginTop: 0 }}>💬 Feedback Box</h2>
+              <FeedbackView role={user.role} />
+            </div>
+          )}
+          {activeView === 'orgchart' && (
+            <div className="content-panel">
+              <OrgChart />
+            </div>
+          )}
+          {activeView === 'docs' && (
+            <div className="content-panel">
+              <DocumentCenter role={user.role} />
+            </div>
+          )}
+          {activeView === 'insights' && (
+            <div className="content-panel">
+              <AiInsights />
+            </div>
+          )}
         </Suspense>
       </main>
 

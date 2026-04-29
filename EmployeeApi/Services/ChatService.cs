@@ -54,4 +54,10 @@ public class ChatService
                    .GetProperty("content")
                    .GetString() ?? "";
     }
+
+    public async Task<string> GetInsightAsync(string prompt)
+    {
+        if (!IsConfigured) return "AI insights not configured. Add GROQ_API_KEY to enable.";
+        return await GetReplyAsync("You are an HR analytics assistant providing concise, actionable insights.", [("user", prompt)]);
+    }
 }
