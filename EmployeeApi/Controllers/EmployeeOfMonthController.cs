@@ -21,7 +21,7 @@ public class EmployeeOfMonthController(AppDbContext db) : ControllerBase
         var employeeIds = list.Select(e => e.EmployeeId).Distinct().ToList();
         var employees = await db.Employees
             .Where(e => employeeIds.Contains(e.Id))
-            .Select(e => new { e.Id, e.Name, e.Department, e.Position, e.PhotoUrl })
+            .Select(e => new { e.Id, Name = e.FirstName + " " + e.LastName, e.Department, e.Position, e.PhotoUrl })
             .ToDictionaryAsync(e => e.Id);
 
         var result = list.Select(e => new
@@ -42,7 +42,7 @@ public class EmployeeOfMonthController(AppDbContext db) : ControllerBase
 
         var emp = await db.Employees
             .Where(e => e.Id == entry.EmployeeId)
-            .Select(e => new { e.Id, e.Name, e.Department, e.Position, e.PhotoUrl })
+            .Select(e => new { e.Id, Name = e.FirstName + " " + e.LastName, e.Department, e.Position, e.PhotoUrl })
             .FirstOrDefaultAsync();
 
         return Ok(new { entry.Id, entry.Month, entry.Year, entry.Reason, entry.NominatedBy, entry.CreatedAt, Employee = emp });

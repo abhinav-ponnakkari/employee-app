@@ -142,8 +142,8 @@ public class EmployeesController : ControllerBase
     public async Task<IActionResult> OrgChart()
     {
         var employees = await _db.Employees
-            .Where(e => e.IsActive)
-            .Select(e => new { e.Id, e.Name, e.Position, e.Department, e.PhotoUrl, e.ManagerId })
+            .Where(e => (e.Status ?? "Active") != "Terminated")
+            .Select(e => new { e.Id, Name = e.FirstName + " " + e.LastName, e.Position, e.Department, e.PhotoUrl, e.ManagerId })
             .ToListAsync();
         return Ok(employees);
     }
@@ -154,8 +154,8 @@ public class EmployeesController : ControllerBase
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var employees = await _db.Employees
-            .Where(e => e.IsActive && e.DateOfBirth != null)
-            .Select(e => new { e.Id, e.Name, e.Department, e.Position, e.PhotoUrl, e.DateOfBirth, e.HireDate })
+            .Where(e => (e.Status ?? "Active") != "Terminated" && e.DateOfBirth != null)
+            .Select(e => new { e.Id, Name = e.FirstName + " " + e.LastName, e.Department, e.Position, e.PhotoUrl, e.DateOfBirth, e.HireDate })
             .ToListAsync();
 
         var upcoming = employees

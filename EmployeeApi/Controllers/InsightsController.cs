@@ -17,7 +17,7 @@ public class InsightsController(AppDbContext db, ChatService chat) : ControllerB
         var now = DateTime.UtcNow;
         var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        var totalEmployees = await db.Employees.CountAsync(e => e.IsActive);
+        var totalEmployees = await db.Employees.CountAsync(e => (e.Status ?? "Active") != "Terminated");
         var pendingLeaves = await db.LeaveRequests.CountAsync(l => l.Status == "Pending");
         var approvedLeavesThisMonth = await db.LeaveRequests
             .CountAsync(l => l.Status == "Approved" && l.CreatedAt >= monthStart);

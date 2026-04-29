@@ -104,7 +104,7 @@ public class SkillsController(AppDbContext db) : ControllerBase
         var empIds = skills.Select(s => s.EmployeeId).Distinct().ToList();
         var employees = await db.Employees
             .Where(e => empIds.Contains(e.Id))
-            .Select(e => new { e.Id, e.Name, e.Department })
+            .Select(e => new { e.Id, Name = e.FirstName + " " + e.LastName, e.Department })
             .ToDictionaryAsync(e => e.Id);
 
         var result = skills.Select(s => new
